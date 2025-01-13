@@ -276,9 +276,17 @@ export class ScenarioDataService {
     return scenarios;
   }
 
+  private cleanValue(value: string): string {
+    return value?.trim()?.replace(/[\[\]()]/g, '') ?? '';
+  }
+
   generatePossibleValues(input: any, defaultValue?: any): any[] {
     const { type, dataType, validationCriteria, validationType, childFields } = input;
-    //Determine how many versions of each field to generate
+    const parseValue = (value: string) => {
+      const cleaned = this.cleanValue(value);
+      return cleaned?.toLowerCase() === 'today' ? new Date() : new Date(cleaned);
+    };
+
     const complexityGeneration = 10;
     if (defaultValue !== null && defaultValue !== undefined) return [defaultValue];
 
@@ -297,9 +305,8 @@ export class ScenarioDataService {
         return scenarios;
 
       case 'number-input':
-        const numberValues = validationCriteria?.split(',').map((val: string) => val.trim());
+        const numberValues = validationCriteria?.split(',').map((val: string) => this.cleanValue(val));
         const minValue = (numberValues && parseInt(numberValues[0], 10)) || 0;
-
         const maxValue =
           numberValues && numberValues[numberValues?.length - 1] !== minValue.toString()
             ? numberValues[numberValues?.length - 1]
@@ -332,7 +339,9 @@ export class ScenarioDataService {
         }
 
       case 'date':
-        const dateValues = validationCriteria?.split(',').map((val: string) => new Date(val.trim()).getTime());
+        const dateValues = validationCriteria
+          ?.split(',')
+          .map((val: string) => parseValue(this.cleanValue(val)).getTime());
         const minDate = (dateValues && dateValues[0]) || new Date().getTime();
         const maxDate =
           dateValues && dateValues[dateValues?.length - 1] !== minDate
@@ -344,7 +353,6 @@ export class ScenarioDataService {
           );
         switch (validationType) {
           case '>=':
-            return generateRandomDates(complexityGeneration);
           case '<=':
             return generateRandomDates(complexityGeneration);
           case '>':
@@ -353,28 +361,31 @@ export class ScenarioDataService {
             return generateRandomDates(complexityGeneration).filter((date) => new Date(date).getTime() < maxDate);
           // range exclusive
           case '(date)':
-            return generateRandomDates(complexityGeneration).filter(
-              (date) => new Date(date).getTime() > minDate && new Date(date).getTime() < maxDate,
-            );
-          // range inclusive
+            return generateRandomDates(complexityGeneration).filter((date) => {
+              const dateTime = parseValue(date).getTime();
+              return dateTime > minDate && dateTime < maxDate;
+            });
           case '[date]':
             return generateRandomDates(complexityGeneration);
           case '[=date]':
           case '[=dates]':
-            return validationCriteria.split(',').map((val: string) => val.trim());
+            return validationCriteria.split(',').map((val: string) => {
+              const parsedDate = parseValue(val.trim());
+              return parsedDate.toISOString().slice(0, 10);
+            });
           default:
             return generateRandomDates(complexityGeneration);
         }
 
       case 'text-input':
         if (validationType === '[=texts]') {
-          const textOptionsArray = validationCriteria.split(',').map((val: string) => val.trim());
+          const textOptionsArray = validationCriteria.split(',').map((val: string) => this.cleanValue(val));
           const arrayCombinations = generateCombinationsWithLimit(textOptionsArray);
 
           return arrayCombinations;
         }
         if (validationType === '[=text]') {
-          return validationCriteria.split(',').map((val: string) => val.trim());
+          return validationCriteria.split(',').map((val: string) => this.cleanValue(val));
         }
         // TODO: Future update to include regex generation
         const generateRandomText = (

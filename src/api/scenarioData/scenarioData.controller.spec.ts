@@ -209,13 +209,16 @@ describe('ScenarioDataController', () => {
     it('should return CSV content with correct headers', async () => {
       const filepath = 'test.json';
       const ruleContent = { nodes: [], edges: [] };
-      const csvContent = `Scenario,Input: familyComposition,Input: numberOfChildren,Output: isEligible,Output: baseAmount
+      const csvRunResponse = {
+        allTestsPassed: true,
+        csvContent: `Scenario,Input: familyComposition,Input: numberOfChildren,Output: isEligible,Output: baseAmount
   Scenario 1,single,,true,
-  Scenario 2,couple,3,,200`;
+  Scenario 2,couple,3,,200`,
+      };
 
       const bom = '\uFEFF';
-      const utf8CsvContent = bom + csvContent;
-      jest.spyOn(service, 'getCSVForRuleRun').mockResolvedValue(csvContent);
+      const utf8CsvContent = bom + csvRunResponse.csvContent;
+      jest.spyOn(service, 'getCSVForRuleRun').mockResolvedValue(csvRunResponse);
 
       const mockResponse = {
         status: jest.fn().mockReturnThis(),
@@ -300,7 +303,7 @@ describe('ScenarioDataController', () => {
         },
       ];
 
-      const csvResult = 'Processed CSV Content';
+      const csvResult = { allTestsPassed: true, csvContent: 'Processed CSV Content' };
 
       mockScenarioDataService.processProvidedScenarios.mockResolvedValue(scenarios);
       mockScenarioDataService.getCSVForRuleRun.mockResolvedValue(csvResult);
@@ -319,7 +322,7 @@ describe('ScenarioDataController', () => {
       expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename=processed_data.csv');
       expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
       const receivedBuffer = Buffer.from((res.send as jest.Mock).mock.calls[0][0]);
-      expect(receivedBuffer.slice(3)).toEqual(Buffer.from(csvResult));
+      expect(receivedBuffer.slice(3)).toEqual(Buffer.from(csvResult.csvContent));
     });
 
     it('should handle errors during processing', async () => {

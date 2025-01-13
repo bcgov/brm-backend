@@ -126,23 +126,32 @@ export const complexCartesianProduct = <T>(arrays: T[][], limit: number = 3000):
 };
 
 /**
- * Generates all combinations of a given array with varying lengths.
+ * Generates random combinations of items from an array with varying lengths.
  * @param arr The input array to generate combinations from.
- * @param limit The maximum number of combinations to generate.
- * @returns The generated product.
+ * @param limit The maximum number of combinations to generate (default: 1000).
+ * @returns Array of combinations, each containing 1 to n items from the input array.
  */
 export const generateCombinationsWithLimit = (arr: string[], limit: number = 1000): string[][] => {
   const result: string[][] = [];
-
-  const combine = (prefix: string[], remaining: string[], start: number) => {
-    if (result.length >= limit) return; // Stop when the limit is reached
-    for (let i = start; i < remaining.length; i++) {
-      const newPrefix = [...prefix, remaining[i]];
-      result.push(newPrefix);
-      combine(newPrefix, remaining, i + 1);
-    }
+  if (arr.length == 0) return result;
+  const getRandomItems = (items: string[], minCount: number = 1): string[] => {
+    const count = Math.floor(Math.random() * (items.length - minCount + 1)) + minCount;
+    const shuffled = [...items].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
   };
 
-  combine([], arr, 0);
-  return result.slice(0, limit);
+  while (result.length < limit) {
+    const combination = getRandomItems(arr);
+
+    // Check for combination uniqueness
+    const combinationStr = JSON.stringify(combination.sort());
+    if (!result.some((existing) => JSON.stringify(existing.sort()) === combinationStr)) {
+      result.push(combination);
+    }
+
+    // Break if no more unique combinations
+    if (result.length === Math.pow(2, arr.length) - 1) break;
+  }
+
+  return result;
 };

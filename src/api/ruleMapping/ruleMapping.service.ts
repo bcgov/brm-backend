@@ -96,6 +96,38 @@ export class RuleMappingService {
     return uniqueFields;
   }
 
+  // check for presence of goRules expression in string
+  private isExpressionFunction(expression: string): boolean {
+    const functionPatterns = [
+      'none(',
+      'map(',
+      'flatMap(',
+      'filter(',
+      'some(',
+      'all(',
+      'count(',
+      'contains(',
+      'flatten(',
+      'sum(',
+      'avg(',
+      'min(',
+      'max(',
+      'mean(',
+      'mode(',
+      'len(',
+      '$root',
+    ];
+    return functionPatterns.some((pattern) => expression.includes(pattern));
+  }
+
+  // Check if the key is being transformed (used in an operation)
+  private isTransformation(expression: string, key: string): boolean {
+    const cleanExpression = expression.replace(/\s/g, '');
+    if (cleanExpression === key) return true;
+    const operatorPattern = new RegExp(`${key}[^=]*[+\\-*/%?:]`);
+    return operatorPattern.test(expression);
+  }
+
   // extract only the unique inputs from a list of nodes
   // excludes inputs found in the outputs of other nodes
   // inputs that are only transformed are still included as unique as marked as exception
@@ -103,14 +135,14 @@ export class RuleMappingService {
     const { inputs, outputs } = await this.extractInputsAndOutputs(nodes);
     const outputFields = new Set(
       outputs
-        // check for exceptions where input is transformed and exclude from output fields
-        .filter((outputField) =>
-          outputField.exception
-            ? outputField.exception.includes(outputField.key)
-              ? outputField.exception === outputField.key
-              : true
-            : true,
-        )
+        .filter((outputField) => {
+          if (!outputField.exception) return true;
+          if (!outputField.key) return true;
+          if (this.isExpressionFunction(outputField.exception)) {
+            return true;
+          }
+          return !this.isTransformation(outputField.exception, outputField.key);
+        })
         .map((outputField) => outputField.field),
     );
     const uniqueInputFields = this.findUniqueFields(inputs, outputFields);

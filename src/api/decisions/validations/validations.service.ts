@@ -182,20 +182,25 @@ export class ValidationService {
 
   private validateDateCriteria(field: any, input: string | string[]): void {
     const { validationCriteria, validationType } = field;
+    const parseValue = (value: string) => {
+      const cleanValue = value?.trim()?.replace(/[\[\]()]/g, '');
+      return cleanValue?.toLowerCase() === 'today' ? new Date() : new Date(cleanValue);
+    };
+
     const dateValues = validationCriteria
       ? validationCriteria
           .replace(/[\[\]]/g, '')
           .split(',')
-          .map((val: string) => new Date(val.trim()).getTime())
+          .map((val: string) => parseValue(val).getTime())
       : [];
 
-    const dateValidationValue = new Date(validationCriteria).getTime() || new Date().getTime();
+    const dateValidationValue = parseValue(validationCriteria).getTime();
     const [minDate, maxDate] =
       dateValues.length > 1
         ? [dateValues[0], dateValues[dateValues.length - 1]]
         : [new Date().getTime(), new Date().setFullYear(new Date().getFullYear() + 1)];
 
-    const dateInput = typeof input === 'string' ? new Date(input).getTime() : null;
+    const dateInput = typeof input === 'string' ? parseValue(input).getTime() : null;
 
     switch (validationType) {
       case '==':
@@ -269,6 +274,13 @@ export class ValidationService {
     }
   }
 
+  private normalizeText(text: string): string {
+    return text
+      ?.trim()
+      ?.replace(/[\[\]()'"''""]/g, '')
+      ?.replace(/\s+/g, ' ');
+  }
+
   private validateTextCriteria(field: any, input: string | string[]): void {
     const { validationCriteria, validationType } = field;
 
@@ -310,16 +322,18 @@ export class ValidationService {
         const validTextArray = validationCriteria
           .replace(/[\[\]]/g, '')
           .split(',')
-          .map((val: string) => val.trim());
+          .map((val: string) => this.normalizeText(val));
+
         const inputArray = Array.isArray(input)
-          ? input
+          ? input.map((val) => this.normalizeText(val))
           : input
               .replace(/[\[\]]/g, '')
               .split(',')
-              .map((val) => val.trim());
+              .map((val) => this.normalizeText(val));
+
         if (!inputArray.every((inp: string) => validTextArray.includes(inp))) {
           throw new ValidationError(
-            `Input ${field.field} must be on or many of the values from: ${validTextArray.join(', ')}`,
+            `Input ${field.field} must be one or many of the values from: ${validTextArray.join(', ')}`,
           );
         }
         break;
