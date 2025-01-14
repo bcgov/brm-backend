@@ -528,7 +528,7 @@ describe('ScenarioDataService', () => {
 
       jest.spyOn(service, 'runDecisionsForScenarios').mockResolvedValue(ruleRunResults);
 
-      const csvContent = await service.getCSVForRuleRun(filepath, ruleContent);
+      const { csvContent } = await service.getCSVForRuleRun(filepath, ruleContent);
 
       const expectedCsvContent = `Scenario,Results Match Expected (Pass/Fail),Input: familyComposition,Input: numberOfChildren,Error?\nScenario 1,Fail,single,2,\nScenario 2,Fail,couple,3,`;
 
@@ -553,7 +553,7 @@ describe('ScenarioDataService', () => {
 
       jest.spyOn(service, 'runDecisionsForScenarios').mockResolvedValue(ruleRunResults);
 
-      const csvContent = await service.getCSVForRuleRun(filepath, ruleContent);
+      const { csvContent } = await service.getCSVForRuleRun(filepath, ruleContent);
 
       const expectedCsvContent = `Scenario,Results Match Expected (Pass/Fail),Input: familyComposition,Input: numberOfChildren,Error?\nScenario 1,Fail,single,,\nScenario 2,Fail,couple,3,`;
 
@@ -573,7 +573,7 @@ describe('ScenarioDataService', () => {
 
       jest.spyOn(service, 'runDecisionsForScenarios').mockResolvedValue(ruleRunResults);
 
-      const csvContent = await service.getCSVForRuleRun(filepath, ruleContent);
+      const { csvContent } = await service.getCSVForRuleRun(filepath, ruleContent);
 
       const expectedCsvContent = `Scenario,Results Match Expected (Pass/Fail),Input: familyComposition,Input: numberOfChildren,Error?\nScenario 1,Fail,single,2,`;
 
@@ -587,7 +587,7 @@ describe('ScenarioDataService', () => {
 
       jest.spyOn(service, 'runDecisionsForScenarios').mockResolvedValue(ruleRunResults);
 
-      const csvContent = await service.getCSVForRuleRun(filepath, ruleContent);
+      const { csvContent } = await service.getCSVForRuleRun(filepath, ruleContent);
 
       const expectedCsvContent = `Scenario,Results Match Expected (Pass/Fail),Error?\n`;
 
@@ -606,7 +606,7 @@ describe('ScenarioDataService', () => {
 
       jest.spyOn(service, 'runDecisionsForScenarios').mockResolvedValue(ruleRunResults);
 
-      const csvContent = await service.getCSVForRuleRun(filepath, ruleContent);
+      const { csvContent } = await service.getCSVForRuleRun(filepath, ruleContent);
 
       const expectedCsvContent = `Scenario,Results Match Expected (Pass/Fail),Error?\nScenario 1,Fail,`;
 
@@ -626,7 +626,7 @@ describe('ScenarioDataService', () => {
 
       jest.spyOn(service, 'runDecisionsForScenarios').mockResolvedValue(ruleRunResults);
 
-      const csvContent = await service.getCSVForRuleRun(filepath, ruleContent);
+      const { csvContent } = await service.getCSVForRuleRun(filepath, ruleContent);
 
       const expectedCsvContent = `Scenario,Results Match Expected (Pass/Fail),Input: input1,Input: input2,Error?\nScenario 1,Fail,"value, with, commas",value "with" quotes,`;
 

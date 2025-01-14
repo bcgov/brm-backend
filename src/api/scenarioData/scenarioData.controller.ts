@@ -129,8 +129,10 @@ export class ScenarioDataController {
     @Res() res: Response,
   ) {
     try {
-      const fileContent = await this.scenarioDataService.getCSVForRuleRun(filepath, ruleContent);
-      this.sendCSV(res, fileContent, filepath);
+      const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(filepath, ruleContent);
+      // Add header that notes if all tests passed or not
+      res.setHeader('X-All-Tests-Passed', allTestsPassed.toString());
+      this.sendCSV(res, csvContent, filepath);
     } catch (error) {
       throw new HttpException('Error generating CSV for rule run', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -162,7 +164,13 @@ export class ScenarioDataController {
 
     try {
       const scenarios = await this.scenarioDataService.processProvidedScenarios(filepath, file);
-      const csvContent = await this.scenarioDataService.getCSVForRuleRun(filepath, ruleContent, scenarios);
+      const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
+        filepath,
+        ruleContent,
+        scenarios,
+      );
+      // Add header that notes if all tests passed or not
+      res.setHeader('X-All-Tests-Passed', allTestsPassed.toString());
       this.sendCSV(res, csvContent);
     } catch (error) {
       throw new HttpException('Error processing CSV file', HttpStatus.INTERNAL_SERVER_ERROR);

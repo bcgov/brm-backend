@@ -168,7 +168,11 @@ export class ScenarioDataService {
    * Retrieves scenario results, extracts unique input and output keys, and maps them to CSV rows.
    * Constructs CSV headers and rows based on input and output keys.
    */
-  async getCSVForRuleRun(filepath: string, ruleContent: RuleContent, newScenarios?: ScenarioData[]): Promise<string> {
+  async getCSVForRuleRun(
+    filepath: string,
+    ruleContent: RuleContent,
+    newScenarios?: ScenarioData[],
+  ): Promise<{ allTestsPassed: boolean; csvContent: string }> {
     const ruleRunResults: RuleRunResults = await this.runDecisionsForScenarios(filepath, ruleContent, newScenarios);
 
     const keys = {
@@ -186,7 +190,12 @@ export class ScenarioDataService {
       'Error?',
     ];
 
-    const rows = Object.entries(ruleRunResults).map(([scenarioName, data]) => [
+    const runResultEntries = Object.entries(ruleRunResults);
+
+    // Check if any tests failed (aka didn't match)
+    const failedTests = runResultEntries.some(([, data]) => data.resultMatch !== true);
+
+    const rows = runResultEntries.map(([scenarioName, data]) => [
       this.escapeCSVField(scenarioName),
       data.resultMatch ? 'Pass' : 'Fail',
       ...this.mapFields(data.inputs, keys.inputs),
@@ -195,7 +204,7 @@ export class ScenarioDataService {
       data.error ? this.escapeCSVField(data.error) : '',
     ]);
 
-    return [headers, ...rows].map((row) => row.join(',')).join('\n');
+    return { allTestsPassed: !failedTests, csvContent: [headers, ...rows].map((row) => row.join(',')).join('\n') };
   }
 
   private prefixKeys(keys: string[], prefix: string): string[] {
