@@ -20,12 +20,22 @@ import { RuleContent } from '../ruleMapping/ruleMapping.interface';
 import { CreateScenarioDto } from './dto/create-scenario.dto';
 import { FileNotFoundError } from '../../utils/readFile';
 import { RuleRunResults } from './scenarioData.interface';
+import { ApiOperation, ApiResponse, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { scenarioCSVExample, scenarioExample } from '../../examples/scenario.example';
+import { ruleContentExample, ruleExample, ruleInputs } from '../../examples/rule.example';
+import { decisionResultExample } from '../../examples/decision.example';
 
 @Controller('api/scenario')
 export class ScenarioDataController {
   constructor(private readonly scenarioDataService: ScenarioDataService) {}
 
   @Get('/list')
+  @ApiOperation({ summary: 'Get all scenarios' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all scenarios retrieved successfully',
+    type: [ScenarioData],
+  })
   async getAllScenarioData(): Promise<ScenarioData[]> {
     try {
       return await this.scenarioDataService.getAllScenarioData();
@@ -35,6 +45,13 @@ export class ScenarioDataController {
   }
 
   @Get('/by-rule/:ruleId')
+  @ApiOperation({ summary: 'Get scenarios by rule ID' })
+  @ApiParam({ name: 'ruleId', description: 'The ID of the rule', schema: { example: scenarioExample.ruleID } })
+  @ApiResponse({
+    status: 200,
+    description: 'Scenarios for rule retrieved successfully',
+    type: [ScenarioData],
+  })
   async getScenariosByRuleId(@Param('ruleId') ruleId: string): Promise<ScenarioData[]> {
     try {
       return await this.scenarioDataService.getScenariosByRuleId(ruleId);
@@ -48,6 +65,19 @@ export class ScenarioDataController {
   }
 
   @Post('/by-filename')
+  @ApiOperation({ summary: 'Get scenarios by file path' })
+  @ApiBody({
+    schema: {
+      properties: {
+        filepath: { type: 'string', example: scenarioExample.filepath },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Scenarios for file retrieved successfully',
+    type: [ScenarioData],
+  })
   async getScenariosByFilename(@Body('filepath') filepath: string): Promise<ScenarioData[]> {
     try {
       return await this.scenarioDataService.getScenariosByFilename(filepath);
@@ -61,6 +91,13 @@ export class ScenarioDataController {
   }
 
   @Get('/:scenarioId')
+  @ApiOperation({ summary: 'Get scenario by ID' })
+  @ApiParam({ name: 'scenarioId', description: 'The ID of the scenario', example: scenarioExample._id })
+  @ApiResponse({
+    status: 200,
+    description: 'Scenario retrieved successfully',
+    type: ScenarioData,
+  })
   async getScenarioData(@Param('scenarioId') scenarioId: string): Promise<ScenarioData> {
     try {
       return await this.scenarioDataService.getScenarioData(scenarioId);
@@ -70,6 +107,13 @@ export class ScenarioDataController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new scenario' })
+  @ApiBody({ type: CreateScenarioDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Scenario created successfully',
+    type: ScenarioData,
+  })
   async createScenarioData(@Body() createScenarioDto: CreateScenarioDto): Promise<ScenarioData> {
     try {
       const scenarioData: ScenarioData = {
@@ -86,6 +130,14 @@ export class ScenarioDataController {
   }
 
   @Put('/:scenarioId')
+  @ApiOperation({ summary: 'Update an existing scenario' })
+  @ApiParam({ name: 'scenarioId', description: 'The ID of the scenario to update', example: scenarioExample._id })
+  @ApiBody({ type: CreateScenarioDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Scenario updated successfully',
+    type: ScenarioData,
+  })
   async updateScenarioData(
     @Param('scenarioId') scenarioId: string,
     @Body() updateScenarioDto: CreateScenarioDto,
@@ -105,6 +157,12 @@ export class ScenarioDataController {
   }
 
   @Delete('/:scenarioId')
+  @ApiOperation({ summary: 'Delete a scenario' })
+  @ApiParam({ name: 'scenarioId', description: 'The ID of the scenario to delete', example: scenarioExample._id })
+  @ApiResponse({
+    status: 200,
+    description: 'Scenario deleted successfully',
+  })
   async deleteScenarioData(@Param('scenarioId') scenarioId: string): Promise<void> {
     try {
       await this.scenarioDataService.deleteScenarioData(scenarioId);
@@ -123,6 +181,19 @@ export class ScenarioDataController {
   };
 
   @Post('/evaluation')
+  @ApiOperation({ summary: 'Generate CSV for rule evaluation' })
+  @ApiBody({
+    schema: {
+      properties: {
+        filepath: { type: 'string', description: 'Path to the rule file', example: ruleExample.filepath },
+        ruleContent: { type: 'object', description: 'Rule file body', example: ruleContentExample },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file generated successfully',
+  })
   async getCSVForRuleRun(
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: RuleContent,
@@ -139,6 +210,24 @@ export class ScenarioDataController {
   }
 
   @Post('/run-decisions')
+  @ApiOperation({ summary: 'Run decision engine for scenarios' })
+  @ApiBody({
+    schema: {
+      properties: {
+        filepath: { type: 'string', example: ruleExample.filepath },
+        ruleContent: { type: 'object', example: ruleContentExample },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Decisions executed successfully',
+    schema: {
+      properties: {
+        decisions: { type: 'object', example: decisionResultExample },
+      },
+    },
+  })
   async runDecisionsForScenarios(
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: RuleContent,
@@ -151,6 +240,40 @@ export class ScenarioDataController {
   }
 
   @Post('/evaluation/upload/')
+  @ApiOperation({ summary: 'Upload and process CSV file for evaluation' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: `CSV file containing scenarios. Example (save as CSV file for upload): ${scenarioCSVExample} .`,
+        },
+        filepath: { type: 'string', description: 'Path to the rule file', example: ruleExample.filepath },
+        ruleContent: {
+          type: 'string',
+          description: 'Rule content to be executed (as JSON string)',
+          example: ruleContentExample,
+        },
+      },
+      required: ['file', 'filepath', 'ruleContent'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file processed successfully',
+    type: 'file',
+    example: scenarioCSVExample,
+    content: {
+      'text/csv': {
+        schema: {
+          example: scenarioCSVExample,
+        },
+      },
+    },
+  })
   @UseInterceptors(FileInterceptor('file'))
   async uploadCSVAndProcess(
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -166,7 +289,7 @@ export class ScenarioDataController {
       const scenarios = await this.scenarioDataService.processProvidedScenarios(filepath, file);
       const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
         filepath,
-        ruleContent,
+        typeof ruleContent === 'string' ? JSON.parse(ruleContent) : ruleContent,
         scenarios,
       );
       // Add header that notes if all tests passed or not
@@ -178,6 +301,29 @@ export class ScenarioDataController {
   }
 
   @Post('/test')
+  @ApiOperation({ summary: 'Generate test scenarios and evaluate rules' })
+  @ApiBody({
+    schema: {
+      properties: {
+        filepath: { type: 'string', example: ruleExample.filepath },
+        ruleContent: { type: 'object', example: ruleContentExample },
+        simulationContext: { type: 'object', example: ruleInputs },
+        testScenarioCount: { type: 'number', example: 10 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Test scenarios generated and evaluated successfully',
+    content: {
+      'text/csv': {
+        schema: {
+          type: 'string',
+          example: scenarioCSVExample,
+        },
+      },
+    },
+  })
   async getCSVTests(
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: RuleContent,

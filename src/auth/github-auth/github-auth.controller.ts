@@ -1,4 +1,5 @@
 import { Controller, Get, Query, Redirect, Res, Post, Logger } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { GithubAuthService } from './github-auth.service';
 
 @Controller('auth/github')
@@ -15,6 +16,17 @@ export class GithubAuthController {
    */
   @Get()
   @Redirect()
+  @ApiOperation({ summary: 'Redirect to GitHub OAuth login page' })
+  @ApiQuery({
+    name: 'returnUrl',
+    required: false,
+    description: 'URL to redirect to after successful authentication',
+    example: process.env.FRONTEND_URI || 'http://localhost:3000',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to GitHub OAuth page',
+  })
   redirectToGitHub(@Query('returnUrl') returnUrl?: string) {
     const url = this.authService.getGitHubAuthURL(returnUrl);
     return { url };
@@ -27,6 +39,21 @@ export class GithubAuthController {
    * @param res
    */
   @Get('callback')
+  @ApiOperation({ summary: 'Handle GitHub OAuth callback' })
+  @ApiQuery({
+    name: 'code',
+    required: true,
+    description: 'Authorization code from GitHub',
+  })
+  @ApiQuery({
+    name: 'state',
+    required: true,
+    description: 'Return URL encoded in state parameter',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to original return URL with authenticated session',
+  })
   async githubAuthCallback(@Query('code') code: string, @Query('state') state: string, @Res() res) {
     const accessToken = await this.authService.getAccessToken(code);
     const githubUser = await this.authService.getGithubUser(accessToken);
@@ -43,6 +70,14 @@ export class GithubAuthController {
    * @param res
    */
   @Post('logout')
+  @ApiOperation({ summary: 'Logout user from GitHub authentication' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully logged out',
+    schema: {
+      example: { message: 'Logged out successfully' },
+    },
+  })
   async logoutOfGithubApp(@Res() res) {
     // Set the server-side cookies to empty in order to 'logout' the user from their github oauth
     res.cookie('github-authentication-token', '', { httpOnly: true });
