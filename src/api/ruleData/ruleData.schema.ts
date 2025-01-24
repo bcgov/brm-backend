@@ -38,7 +38,7 @@ export class RuleData {
     description: 'Id for the draft of updated rule content',
     example: ruleExample.ruleDraft,
   })
-  @Prop({ type: Types.ObjectId })
+  @Prop({ type: Types.ObjectId, ref: 'RuleDraft' })
   ruleDraft?: RuleDraftDocument | Types.ObjectId;
 
   @ApiProperty({
