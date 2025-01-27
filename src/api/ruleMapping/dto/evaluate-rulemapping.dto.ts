@@ -125,6 +125,12 @@ export class TraceObjectEntryClass implements TraceObjectEntry {
   })
   traceData?: any;
 
+  @ApiProperty({
+    description: 'Order',
+    required: true,
+  })
+  order: any;
+
   constructor(id: string, name: string, input: any, output: any, performance?: string, traceData?: any) {
     this.id = id;
     this.name = name;
