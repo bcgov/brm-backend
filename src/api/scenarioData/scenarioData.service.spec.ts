@@ -377,12 +377,14 @@ describe('ScenarioDataService', () => {
         trace: {
           trace1: {
             id: 'trace1',
+            order: 1,
             name: 'trace1',
             input: { familyComposition: 'single' },
             output: { isEligible: true },
           },
           trace2: {
             id: 'trace2',
+            order: 2,
             name: 'trace2',
             input: { numberOfChildren: 2 },
             output: { baseAmount: 100 },
@@ -480,6 +482,7 @@ describe('ScenarioDataService', () => {
         trace: {
           trace1: {
             id: 'trace1',
+            order: 1,
             name: 'trace1',
             input: {},
             output: { isEligible: true },

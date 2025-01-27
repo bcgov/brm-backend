@@ -35,6 +35,7 @@ describe('Rule Utility Functions', () => {
     it('should map trace to result for input', () => {
       const trace: TraceObjectEntry = {
         id: 'trace1',
+        order: 1,
         name: 'trace1',
         input: { input1: 'value1', input2: 'value2' },
         output: {},
@@ -49,6 +50,7 @@ describe('Rule Utility Functions', () => {
     it('should map trace to result for output', () => {
       const trace: TraceObjectEntry = {
         id: 'trace1',
+        order: 1,
         name: 'trace1',
         input: {},
         output: { output1: 'value1', output2: 'value2' },
@@ -63,6 +65,7 @@ describe('Rule Utility Functions', () => {
     it('should map nested objects in trace', () => {
       const trace: TraceObjectEntry = {
         id: 'trace1',
+        order: 1,
         name: 'trace1',
         input: { input1: { nestedKey: 'nestedValue' }, input2: 'value2' },
         output: {},
@@ -77,6 +80,7 @@ describe('Rule Utility Functions', () => {
     it('should map array values in trace', () => {
       const trace: TraceObjectEntry = {
         id: 'trace1',
+        order: 1,
         name: 'trace1',
         input: {
           input1: ['value1', 'value2'],
@@ -94,6 +98,7 @@ describe('Rule Utility Functions', () => {
     it('should handle object entries correctly', () => {
       const trace: TraceObjectEntry = {
         id: 'trace1',
+        order: 1,
         name: 'trace1',
         input: {
           input1: { key1: 'value1', key2: 'value2' },
@@ -112,8 +117,8 @@ describe('Rule Utility Functions', () => {
   describe('mapTraces', () => {
     it('should map multiple traces for input', () => {
       const traces: TraceObject = {
-        trace1: { id: 'trace1', name: 'trace1', input: { input1: 'value1' }, output: {} },
-        trace2: { id: 'trace2', name: 'trace2', input: { input2: 'value2' }, output: {} },
+        trace1: { id: 'trace1', order: 1, name: 'trace1', input: { input1: 'value1' }, output: {} },
+        trace2: { id: 'trace2', order: 2, name: 'trace2', input: { input2: 'value2' }, output: {} },
       };
       const result = mapTraces(traces, mockRuleSchema, 'input');
       expect(result).toEqual({
@@ -124,8 +129,8 @@ describe('Rule Utility Functions', () => {
 
     it('should map multiple traces for output', () => {
       const traces: TraceObject = {
-        trace1: { id: 'trace1', name: 'trace1', input: {}, output: { output1: 'value1' } },
-        trace2: { id: 'trace2', name: 'trace2', input: {}, output: { output2: 'value2' } },
+        trace1: { id: 'trace1', order: 1, name: 'trace1', input: {}, output: { output1: 'value1' } },
+        trace2: { id: 'trace2', order: 2, name: 'trace2', input: {}, output: { output2: 'value2' } },
       };
       const result = mapTraces(traces, mockRuleSchema, 'output');
       expect(result).toEqual({
@@ -149,6 +154,7 @@ describe('Rule Utility Functions', () => {
       const trace: TraceObject = {
         nestedObjectKey: {
           id: '1',
+          order: 1,
           name: 'Test Entry',
           input: {},
           output: {},
@@ -166,16 +172,17 @@ describe('Rule Utility Functions', () => {
         nestedObjectKey: {
           name: 'Test Entry',
           id: '1',
+          order: 1,
           input: {},
           output: {},
           traceData: { first: { nestedField: 'value1' }, second: { nestedField: 'value2' } },
         },
-        'nestedObjectKey[3]nestedObjectKey': {},
         'nestedObjectKey[4]nestedObjectKey': {},
-        'nestedObjectKey[5]first': {
+        'nestedObjectKey[5]nestedObjectKey': {},
+        'nestedObjectKey[6]first': {
           nestedField: 'value1',
         },
-        'nestedObjectKey[5]second': { nestedField: 'value2' },
+        'nestedObjectKey[6]second': { nestedField: 'value2' },
       });
     });
 
@@ -183,6 +190,7 @@ describe('Rule Utility Functions', () => {
       const trace: TraceObject = {
         emptyObjectKey: {
           id: '2',
+          order: 1,
           name: 'Empty Object Entry',
           input: {},
           output: {},
@@ -202,18 +210,21 @@ describe('Rule Utility Functions', () => {
       const trace: TraceObject = {
         $: {
           id: '3',
+          order: 2,
           name: 'Dollar Entry',
           input: {},
           output: {},
         },
         $nodes: {
           id: '4',
+          order: 3,
           name: 'Nodes Entry',
           input: {},
           output: {},
         },
         validKey: {
           id: '5',
+          order: 4,
           name: 'Valid Entry',
           input: {},
           output: {},
@@ -229,6 +240,7 @@ describe('Rule Utility Functions', () => {
       expect(result).toEqual({
         validKey: {
           id: '5',
+          order: 4,
           name: 'Valid Entry',
           input: {},
           output: {},
@@ -236,9 +248,9 @@ describe('Rule Utility Functions', () => {
             first: { someField: 'validValue' },
           },
         },
-        'validKey[3]validKey': {},
         'validKey[4]validKey': {},
-        'validKey[5]first': {
+        'validKey[5]validKey': {},
+        'validKey[6]first': {
           someField: 'validValue',
         },
       });
@@ -248,6 +260,7 @@ describe('Rule Utility Functions', () => {
       const trace: TraceObject = {
         unrelatedKey: {
           id: '6',
+          order: 5,
           name: 'Unrelated Entry',
           input: {},
           output: {},
