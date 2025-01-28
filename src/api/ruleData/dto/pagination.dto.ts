@@ -18,6 +18,7 @@ export class PaginationDto {
   @ApiProperty({
     example: 1,
     description: 'Page number for pagination',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -26,6 +27,7 @@ export class PaginationDto {
   @ApiProperty({
     example: 10,
     description: 'Number of items per page',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -34,6 +36,7 @@ export class PaginationDto {
   @ApiProperty({
     example: 'filepath',
     description: 'Field to sort by',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -43,6 +46,7 @@ export class PaginationDto {
     example: 'ascend',
     enum: ['ascend', 'descend'],
     description: 'Sort order direction',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -52,6 +56,7 @@ export class PaginationDto {
     type: FiltersDto,
     description: 'Filter criteria',
     example: { filepath: ['general-supplements', 'health-supplements'] },
+    required: false,
   })
   @IsOptional()
   filters?: FiltersDto;
@@ -59,6 +64,7 @@ export class PaginationDto {
   @ApiProperty({
     example: 'winter',
     description: 'Search term for filtering results',
+    required: false,
   })
   @IsOptional()
   @IsString()
