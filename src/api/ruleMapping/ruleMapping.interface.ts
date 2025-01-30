@@ -38,6 +38,7 @@ export interface Node {
   id: any;
   type: string;
   content: NodeContent | string;
+  name?: string;
 }
 
 export interface Edge {

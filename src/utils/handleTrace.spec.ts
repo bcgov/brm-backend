@@ -166,7 +166,6 @@ describe('Rule Utility Functions', () => {
       };
 
       const result = mapTraceToResult(trace, mockSchema, 'input');
-      console.log('Test Result (nested objects):', result);
 
       expect(result).toEqual({
         nestedObjectKey: {
@@ -201,7 +200,6 @@ describe('Rule Utility Functions', () => {
       };
 
       const result = mapTraceToResult(trace, mockSchema, 'output');
-      console.log('Test Result (empty object):', result);
 
       expect(result).toEqual({});
     });
@@ -235,7 +233,6 @@ describe('Rule Utility Functions', () => {
       };
 
       const result = mapTraceToResult(trace, mockSchema, 'input');
-      console.log('Test Result (ignore $ and $nodes):', result);
 
       expect(result).toEqual({
         validKey: {
@@ -271,7 +268,6 @@ describe('Rule Utility Functions', () => {
       };
 
       const result = mapTraceToResult(trace, mockSchema, 'input');
-      console.log('Test Result (unrelated key):', result);
 
       expect(result).toEqual({});
     });

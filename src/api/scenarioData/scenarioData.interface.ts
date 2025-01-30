@@ -7,6 +7,7 @@ export interface RuleField {
   validationCriteria?: string;
   validationType?: string;
   childFields?: RuleField[];
+  nested?: boolean | string;
 }
 
 export interface RuleSchema {
