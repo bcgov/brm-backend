@@ -168,6 +168,7 @@ describe('RuleMappingController', () => {
       const mockTraceObject: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule',
           input: { field1: 'value1', field2: 'value2' },
           output: { outputField1: 'outputValue1' },
@@ -191,18 +192,21 @@ describe('RuleMappingController', () => {
       const mockTraceObject: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule 1',
           input: { field1: 'value1', field2: 'value2' },
           output: { outputField1: 'outputValue1' },
         },
         '2': {
           id: '2',
+          order: 1,
           name: 'Test Rule 2',
           input: { field3: 'value3', field4: 'value4' },
           output: { outputField2: 'outputValue2' },
         },
         '3': {
           id: '3',
+          order: 2,
           name: 'Test Rule 3',
           input: { field5: 'value5' },
           output: { outputField3: 'outputValue3' },
@@ -234,6 +238,7 @@ describe('RuleMappingController', () => {
       const mockTraceObject: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule',
           input: { field1: 'value1', field2: 'value2' },
           output: { outputField1: 'outputValue1' },
@@ -259,7 +264,7 @@ describe('RuleMappingController', () => {
     });
 
     it('should handle internal server errors', async () => {
-      const mockTraceObject: TraceObject = { '1': { id: '1', name: 'Test Rule', input: {}, output: {} } };
+      const mockTraceObject: TraceObject = { '1': { id: '1', order: 0, name: 'Test Rule', input: {}, output: {} } };
       const dto: EvaluateRuleRunSchemaDto = { trace: mockTraceObject };
 
       jest.spyOn(service, 'evaluateRuleSchema').mockImplementation(() => {

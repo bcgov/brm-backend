@@ -41,10 +41,10 @@ export class RuleDataService {
   }
 
   async getAllRuleData(
-    params: PaginationDto = { page: 1, pageSize: 5000 },
+    params?: PaginationDto,
   ): Promise<{ data: RuleData[]; total: number; categories: Array<CategoryObject> }> {
     try {
-      const { page, pageSize, sortField, sortOrder, filters, searchTerm } = params || {};
+      const { page = 1, pageSize = 5000, sortField, sortOrder, filters, searchTerm } = params || {};
       const queryConditions: any[] = [];
 
       // search

@@ -796,6 +796,7 @@ describe('RuleMappingService', () => {
       const trace: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule',
           input: { field1: 'value1', field2: 'value2' },
           output: { outputField1: 'outputValue1' },
@@ -813,18 +814,21 @@ describe('RuleMappingService', () => {
       const trace: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule 1',
           input: { field1: 'value1', field2: 'value2' },
           output: { outputField1: 'outputValue1' },
         },
         '2': {
           id: '2',
+          order: 1,
           name: 'Test Rule 2',
           input: { field3: 'value3', field4: 'value4' },
           output: { outputField2: 'outputValue2' },
         },
         '3': {
           id: '3',
+          order: 2,
           name: 'Test Rule 3',
           input: { field5: 'value5' },
           output: { outputField3: 'outputValue3' },
@@ -852,6 +856,7 @@ describe('RuleMappingService', () => {
       const trace: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule',
           input: null,
           output: { outputField1: 'outputValue1' },
@@ -869,6 +874,7 @@ describe('RuleMappingService', () => {
       const trace: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule',
           input: { field1: 'value1', field2: 'value2' },
           output: null,
@@ -886,6 +892,7 @@ describe('RuleMappingService', () => {
       const trace: TraceObject = {
         '1': {
           id: '1',
+          order: 0,
           name: 'Test Rule',
           input: null,
           output: null,
@@ -1115,6 +1122,7 @@ describe('RuleMappingService', () => {
             id: 101,
             name: 'Income',
             field: 'income',
+            nested: true,
             description: 'Total annual income of the individual.',
             type: 'number-input',
             validationCriteria: undefined,
@@ -1125,6 +1133,7 @@ describe('RuleMappingService', () => {
             id: 102,
             name: 'Age',
             field: 'age',
+            nested: true,
             description: 'Age of the individual.',
             type: 'number-input',
             validationCriteria: undefined,
@@ -1226,6 +1235,7 @@ describe('RuleMappingService', () => {
             id: 1,
             name: 'Employment Status',
             field: 'employmentStatus',
+            nested: true,
             description: 'Employment status of the individual.',
             type: 'string',
             validationCriteria: undefined,
@@ -1236,6 +1246,7 @@ describe('RuleMappingService', () => {
             id: 101,
             name: 'Income',
             field: 'income',
+            nested: true,
             description: 'Total annual income of the individual.',
             type: 'number-input',
             validationCriteria: undefined,

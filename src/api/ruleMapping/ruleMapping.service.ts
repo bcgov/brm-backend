@@ -218,7 +218,7 @@ export class RuleMappingService {
         if (node.type === 'decisionNode' && typeof node.content === 'object' && node.content?.key) {
           const generateNestedInputs = await this.inputOutputSchemaFile(node.content.key);
           const { inputs, resultOutputs } = generateNestedInputs;
-          resultInput.push(...inputs);
+          resultInput.push(...inputs.map((input) => ({ ...input, nested: node?.name ?? true })));
           resultOutput.push(...resultOutputs);
         }
       }

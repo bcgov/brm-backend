@@ -29,6 +29,9 @@ export class ScenarioDataService {
     private readonly logger: Logger,
   ) {}
 
+  private valueCache = new Map<string, any[]>();
+  private readonly MAX_CARTESIAN_SIZE = 10000;
+
   async getAllScenarioData(): Promise<ScenarioData[]> {
     try {
       const scenarioDataList = await this.scenarioDataModel.find().exec();
@@ -168,7 +171,11 @@ export class ScenarioDataService {
    * Retrieves scenario results, extracts unique input and output keys, and maps them to CSV rows.
    * Constructs CSV headers and rows based on input and output keys.
    */
-  async getCSVForRuleRun(filepath: string, ruleContent: RuleContent, newScenarios?: ScenarioData[]): Promise<string> {
+  async getCSVForRuleRun(
+    filepath: string,
+    ruleContent: RuleContent,
+    newScenarios?: ScenarioData[],
+  ): Promise<{ allTestsPassed: boolean; csvContent: string }> {
     const ruleRunResults: RuleRunResults = await this.runDecisionsForScenarios(filepath, ruleContent, newScenarios);
 
     const keys = {
@@ -186,7 +193,12 @@ export class ScenarioDataService {
       'Error?',
     ];
 
-    const rows = Object.entries(ruleRunResults).map(([scenarioName, data]) => [
+    const runResultEntries = Object.entries(ruleRunResults);
+
+    // Check if any tests failed (aka didn't match)
+    const failedTests = runResultEntries.some(([, data]) => data.resultMatch !== true);
+
+    const rows = runResultEntries.map(([scenarioName, data]) => [
       this.escapeCSVField(scenarioName),
       data.resultMatch ? 'Pass' : 'Fail',
       ...this.mapFields(data.inputs, keys.inputs),
@@ -195,7 +207,7 @@ export class ScenarioDataService {
       data.error ? this.escapeCSVField(data.error) : '',
     ]);
 
-    return [headers, ...rows].map((row) => row.join(',')).join('\n');
+    return { allTestsPassed: !failedTests, csvContent: [headers, ...rows].map((row) => row.join(',')).join('\n') };
   }
 
   private prefixKeys(keys: string[], prefix: string): string[] {
@@ -271,7 +283,49 @@ export class ScenarioDataService {
     return value?.trim()?.replace(/[\[\]()]/g, '') ?? '';
   }
 
+  private getCacheKey(input: any, defaultValue: any): string {
+    return JSON.stringify({
+      field: input.field,
+      type: input.type || input.dataType,
+      validation: input.validationType,
+      criteria: input.validationCriteria,
+      defaultValue,
+      contextHash: JSON.stringify(defaultValue)?.slice(0, 32),
+    });
+  }
+
+  private generateSimplifiedCombinations(fields: string[], values: any[][], count: number): any[] {
+    const results = new Set();
+    for (let i = 0; i < count * 2 && results.size < count; i++) {
+      const combination = values.map((arr) => arr[Math.floor(Math.random() * arr.length)]);
+      const obj = this.generateObjectsFromCombination(fields, combination);
+      results.add(JSON.stringify(obj));
+    }
+    return Array.from(results).map((str) => JSON.parse(str as string));
+  }
+
+  private generateObjectsFromCombination(fields: string[], combination: any[]): any {
+    const result = {};
+    fields.forEach((field, index) => {
+      const parts = field.split('.');
+      let current = result;
+      for (let i = 0; i < parts.length - 1; i++) {
+        current[parts[i]] = current[parts[i]] || {};
+        current = current[parts[i]];
+      }
+      const lastPart = parts[parts.length - 1];
+      current[lastPart] = combination[index];
+    });
+    return result;
+  }
+
   generatePossibleValues(input: any, defaultValue?: any): any[] {
+    const cacheKey = this.getCacheKey(input, defaultValue);
+    const cached = this.valueCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const { type, dataType, validationCriteria, validationType, childFields } = input;
     const parseValue = (value: string) => {
       const cleaned = this.cleanValue(value);
@@ -279,10 +333,42 @@ export class ScenarioDataService {
     };
 
     const complexityGeneration = 10;
-    if (defaultValue !== null && defaultValue !== undefined) return [defaultValue];
+    let minDefaultValue: number | undefined;
+    let maxDefaultValue: number | undefined;
+    let defaultTemplate: any[] = [];
+
+    if (defaultValue !== null && defaultValue !== undefined) {
+      if (typeof defaultValue == 'object' && (defaultValue.minValue || defaultValue.maxValue)) {
+        minDefaultValue = defaultValue.minValue || undefined;
+        maxDefaultValue = defaultValue.maxValue || undefined;
+      } else if (defaultValue && Array.isArray(defaultValue) && defaultValue.length > 0) {
+        defaultTemplate = defaultValue;
+      } else return [defaultValue];
+    }
 
     switch (type || dataType) {
       case 'object-array':
+        if (defaultTemplate.length > 0) {
+          const templateScenarios = [];
+          for (const template of defaultValue) {
+            if (typeof template === 'object') {
+              const generatedTemplate = {};
+              for (const [key, value] of Object.entries(template)) {
+                const matchingChild: any = childFields?.find((field: any) => field.field === key);
+                if (value === null && matchingChild) {
+                  const possibleValues = this.generatePossibleValues(matchingChild);
+                  generatedTemplate[key] = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+                } else {
+                  generatedTemplate[key] = value;
+                }
+              }
+              templateScenarios.push(generatedTemplate);
+            }
+          }
+          return [templateScenarios];
+        }
+
+        // Default generation
         const scenarios = [];
         for (let i = 0; i < complexityGeneration; i++) {
           const numItems = Math.floor(Math.random() * 4) + 1;
@@ -297,14 +383,20 @@ export class ScenarioDataService {
 
       case 'number-input':
         const numberValues = validationCriteria?.split(',').map((val: string) => this.cleanValue(val));
-        const minValue = (numberValues && parseInt(numberValues[0], 10)) || 0;
+        const minValue = minDefaultValue ? minDefaultValue : (numberValues && parseInt(numberValues[0], 10)) || 0;
         const maxValue =
-          numberValues && numberValues[numberValues?.length - 1] !== minValue.toString()
-            ? numberValues[numberValues?.length - 1]
-            : 20;
+          maxDefaultValue ??
+          (numberValues && numberValues.length > 0
+            ? parseInt(numberValues[numberValues.length - 1], 10) || minValue + 20
+            : minValue + 20);
 
-        const generateRandomNumbers = (count: number) =>
-          Array.from({ length: count }, () => Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue);
+        const generateRandomNumbers = (count: number) => {
+          const range = maxValue - minValue;
+          if (range <= 5) {
+            return Array.from({ length: range + 1 }, (_, i) => minValue + i);
+          }
+          return Array.from({ length: count }, () => Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue);
+        };
 
         switch (validationType) {
           case '>=':
@@ -333,15 +425,28 @@ export class ScenarioDataService {
         const dateValues = validationCriteria
           ?.split(',')
           .map((val: string) => parseValue(this.cleanValue(val)).getTime());
-        const minDate = (dateValues && dateValues[0]) || new Date().getTime();
-        const maxDate =
-          dateValues && dateValues[dateValues?.length - 1] !== minDate
+
+        // Get initial min and max dates
+        let minDate = minDefaultValue
+          ? new Date(minDefaultValue).getTime()
+          : (dateValues && dateValues[0]) || new Date().getTime();
+        let maxDate = maxDefaultValue
+          ? new Date(maxDefaultValue).getTime()
+          : dateValues && dateValues[dateValues?.length - 1] !== minDate
             ? dateValues[dateValues?.length - 1]
             : new Date().setFullYear(new Date().getFullYear() + 1);
+
+        if (minDate > maxDate) {
+          const earlierDate = Math.min(minDate, maxDate);
+          minDate = earlierDate;
+          maxDate = earlierDate;
+        }
+
         const generateRandomDates = (count: number) =>
           Array.from({ length: count }, () =>
             new Date(minDate + Math.random() * (maxDate - minDate)).toISOString().slice(0, 10),
           );
+
         switch (validationType) {
           case '>=':
           case '<=':
@@ -402,11 +507,36 @@ export class ScenarioDataService {
     data: any,
     simulationContext?: RuleRunResults,
     testScenarioCount: number = DEFAULT_TEST_SCENARIO_COUNT,
+    defaultTemplate?: any[],
   ) {
+    this.valueCache.clear();
+
     const generateFieldPath = (field: string, parentPath: string = ''): string => {
       return parentPath ? `${parentPath}.${field}` : field;
     };
 
+    // If we have a default template, use it as a base for generating combinations
+    if (defaultTemplate && Array.isArray(defaultTemplate) && defaultTemplate.length > 0) {
+      const templateResults = defaultTemplate.map((template) => {
+        const processedTemplate = {};
+        Object.entries(template).forEach(([key, value]) => {
+          if (value === null) {
+            // Find matching field definition from inputs
+            const matchingField: any = (data.inputs as any[]).find((input: any) => input.field === key);
+            if (matchingField) {
+              const possibleValues = this.generatePossibleValues(matchingField);
+              processedTemplate[key] = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+            }
+          } else {
+            processedTemplate[key] = value;
+          }
+        });
+        return processedTemplate;
+      });
+      return templateResults;
+    }
+
+    // Original combination generation logic
     const mapInputs = (inputs: any[], parentPath: string = ''): { fields: string[]; values: any[][] } => {
       return inputs.reduce(
         (acc, input) => {
@@ -450,6 +580,12 @@ export class ScenarioDataService {
       });
     };
 
+    const totalPossibleCombinations = values.reduce((acc, arr) => acc * arr.length, 1);
+
+    if (totalPossibleCombinations > this.MAX_CARTESIAN_SIZE) {
+      return this.generateSimplifiedCombinations(fields, values, testScenarioCount);
+    }
+
     const inputCombinations = complexCartesianProduct(values) || [];
     const uniqueInputCombinations = removeDuplicates(inputCombinations) || [];
 
@@ -484,16 +620,19 @@ export class ScenarioDataService {
     ruleContent?: RuleContent,
     simulationContext?: RuleRunResults,
     testScenarioCount: number = DEFAULT_TEST_SCENARIO_COUNT,
+    defaultTemplate?: any[],
   ): Promise<{ [scenarioId: string]: any }> {
     if (!ruleContent) {
       const fileContent = await this.documentsService.getFileContent(filepath);
       ruleContent = await JSON.parse(fileContent.toString());
     }
     const ruleSchema: RuleSchema = await this.ruleMappingService.inputOutputSchema(ruleContent);
-    const combinations = this.generateCombinations(ruleSchema, simulationContext, testScenarioCount).slice(
-      0,
+    const combinations = this.generateCombinations(
+      ruleSchema,
+      simulationContext,
       testScenarioCount,
-    );
+      defaultTemplate,
+    ).slice(0, testScenarioCount);
     const formattedExpectedResultsObject = reduceToCleanObj(ruleSchema.resultOutputs, 'field', 'value');
 
     const scenarioPromises = combinations.map(async (scenario: ScenarioDataDocument, index: number) => {

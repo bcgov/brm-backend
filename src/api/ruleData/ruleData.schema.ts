@@ -1,28 +1,58 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { RuleDraftDocument } from './ruleDraft.schema';
+import { ApiProperty } from '@nestjs/swagger';
+import { ruleExample } from '../../examples/rule.example';
 
 @Schema()
 export class RuleData {
-  @Prop({ required: true, description: 'The GoRules ID' })
+  @ApiProperty({
+    description: 'The rule ID within the BRM App',
+    example: ruleExample._id,
+  })
+  @Prop({ required: true })
   _id: string;
 
-  @Prop({ unique: true, description: 'A unique name currently derived from the filepath' })
+  @ApiProperty({
+    description: 'A unique name derived from the filepath',
+    example: ruleExample.name,
+  })
+  @Prop({ unique: true })
   name: string;
 
-  @Prop({ description: 'The title of the rule' })
+  @ApiProperty({
+    description: 'The title of the rule',
+    example: ruleExample.title,
+  })
+  @Prop()
   title: string;
 
-  @Prop({ required: true, description: 'The filepath of the JSON file containing the rule' })
+  @ApiProperty({
+    description: 'The filepath of the JSON file containing the rule',
+    example: ruleExample.filepath,
+  })
+  @Prop({ required: true })
   filepath: string;
 
-  @Prop({ type: Types.ObjectId, description: 'Draft of updated rule content', ref: 'RuleDraft' })
+  @ApiProperty({
+    description: 'Id for the draft of updated rule content',
+    example: ruleExample.ruleDraft,
+  })
+  @Prop({ type: Types.ObjectId, ref: 'RuleDraft' })
   ruleDraft?: RuleDraftDocument | Types.ObjectId;
 
-  @Prop({ description: 'The name of the branch on github associated with this file' })
+  @ApiProperty({
+    description: 'The name of the branch on github associated with this file',
+    example: ruleExample.reviewBranch,
+  })
+  @Prop()
   reviewBranch?: string;
 
-  @Prop({ description: 'If the rule has been published' })
+  @ApiProperty({
+    description: 'If the rule has been published',
+    example: ruleExample.isPublished,
+  })
+  @Prop()
   isPublished?: boolean;
 }
 

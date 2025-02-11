@@ -1,4 +1,4 @@
-import * as csvParser from 'csv-parser';
+import csvParser from 'csv-parser';
 import { formatValue, filterKeys } from './helpers';
 import { Variable } from '../api/scenarioData/scenarioData.schema';
 

@@ -289,13 +289,24 @@ describe('RuleDataService', () => {
       await service.getAllRuleData({
         page: 1,
         pageSize: 10,
-        filters: { status: ['active', 'pending'] },
+        filters: { filepath: ['docs/category1', 'docs/category2'] },
       });
 
       expect(MockRuleDataModel.find).toHaveBeenCalledWith({
         $and: [
           {
-            status: { $in: ['active', 'pending'] },
+            $or: [
+              {
+                filepath: {
+                  $regex: new RegExp('(^docs/category1/|/docs/category1/)', 'i'),
+                },
+              },
+              {
+                filepath: {
+                  $regex: new RegExp('(^docs/category2/|/docs/category2/)', 'i'),
+                },
+              },
+            ],
           },
         ],
       });
@@ -305,13 +316,19 @@ describe('RuleDataService', () => {
       await service.getAllRuleData({
         page: 1,
         pageSize: 10,
-        filters: { isPublished: true },
+        filters: { filepath: ['docs/general'] },
       });
 
       expect(MockRuleDataModel.find).toHaveBeenCalledWith({
         $and: [
           {
-            isPublished: true,
+            $or: [
+              {
+                filepath: {
+                  $regex: new RegExp('(^docs/general/|/docs/general/)', 'i'),
+                },
+              },
+            ],
           },
         ],
       });
@@ -321,7 +338,7 @@ describe('RuleDataService', () => {
       await service.getAllRuleData({
         page: 1,
         pageSize: 10,
-        filters: { status: null, isPublished: undefined },
+        filters: {},
       });
 
       expect(MockRuleDataModel.find).toHaveBeenCalledWith({});
