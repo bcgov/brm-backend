@@ -1,6 +1,6 @@
 import csvParser from 'csv-parser';
 import { formatValue, filterKeys } from './helpers';
-import { Variable } from '../api/scenarioData/scenarioData.schema';
+import { ScenarioData, Variable } from '../api/scenarioData/scenarioData.schema';
 
 /**
  * Parses CSV file to an array of arrays
@@ -19,6 +19,39 @@ export const parseCSV = async (file: Express.Multer.File | undefined): Promise<s
     stream.write(file.buffer);
     stream.end();
   });
+};
+
+export const getScenariosFromParsedCSV = (parsedData: string[][], filepath: string): ScenarioData[] => {
+  if (!parsedData || parsedData.length === 0) {
+    throw new Error('CSV content is empty or invalid');
+  }
+
+  const headers = parsedData[0];
+
+  const inputKeys = extractKeys(headers, 'Input: ') || [];
+  const expectedResultsKeys = extractKeys(headers, 'Expected Result: ') || [];
+
+  const scenarios: ScenarioData[] = [];
+
+  parsedData.slice(1).forEach((row) => {
+    const scenarioTitle = row[0];
+
+    const inputs = formatVariables(row, inputKeys, 2);
+    const expectedResultsStartIndex = 2 + inputKeys.length;
+    const expectedResults = formatVariables(row, expectedResultsKeys, expectedResultsStartIndex, true);
+
+    const scenario: ScenarioData = {
+      title: scenarioTitle,
+      ruleID: '',
+      variables: inputs,
+      filepath: filepath,
+      expectedResults: expectedResults,
+    };
+
+    scenarios.push(scenario);
+  });
+
+  return scenarios;
 };
 
 /**
