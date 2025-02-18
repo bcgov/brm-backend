@@ -2,6 +2,7 @@ import {
   complexCartesianProduct,
   generateCombinationsWithLimit,
   parseCSV,
+  getScenariosFromParsedCSV,
   extractKeys,
   formatVariables,
   cartesianProduct,
@@ -127,6 +128,52 @@ describe('CSV Utility Functions', () => {
         ['1', '2', '3'],
         ['4', '5', '6'],
       ]);
+    });
+  });
+  describe('getScenariosFromParsedCSV', () => {
+    it('should process parsed CSV content and return ScenarioData array', () => {
+      const mockParsedData = [
+        ['Scenario', 'Results Match Expected (Pass/Fail)', 'Input: Age', 'Input: Income', 'Expected Result: Eligible'],
+        ['Scenario 1', 'Pass', '30', '50000', 'true'],
+        ['Scenario 2', 'Pass', '25', '30000', 'false'],
+      ];
+      const result = getScenariosFromParsedCSV(mockParsedData, 'test.json');
+      expect(result).toBeInstanceOf(Array);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        title: 'Scenario 1',
+        ruleID: '',
+        filepath: 'test.json',
+      });
+      expect(result[1]).toMatchObject({
+        title: 'Scenario 2',
+        ruleID: '',
+        filepath: 'test.json',
+      });
+      expect(result[0]).toHaveProperty('variables');
+      expect(result[0]).toHaveProperty('expectedResults');
+      expect(result[1]).toHaveProperty('variables');
+      expect(result[1]).toHaveProperty('expectedResults');
+      expect(result[0].variables).toEqual([
+        { name: 'Age', type: 'number', value: 30 },
+        { name: 'Income', type: 'number', value: 50000 },
+      ]);
+      expect(result[0].expectedResults).toEqual([
+        {
+          name: 'Eligible',
+          value: true,
+          type: 'boolean',
+        },
+      ]);
+    });
+    it('should throw an error if parsed CSV content is empty', () => {
+      expect(() => getScenariosFromParsedCSV([], 'test.json')).toThrow('CSV content is empty or invalid');
+    });
+    it('should handle parsed CSV with only headers', () => {
+      const mockParsedData = [['Title', 'Input: Age', 'Input: Income', 'Expected Result: Eligible']];
+      const result = getScenariosFromParsedCSV(mockParsedData, 'test.json');
+      expect(result).toBeInstanceOf(Array);
+      expect(result).toHaveLength(0);
     });
   });
   describe('extractKeys', () => {
