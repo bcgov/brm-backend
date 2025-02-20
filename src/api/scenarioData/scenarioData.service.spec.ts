@@ -9,7 +9,7 @@ import { RuleSchema } from './scenarioData.interface';
 import { DecisionsService } from '../decisions/decisions.service';
 import { RuleMappingService } from '../ruleMapping/ruleMapping.service';
 import { DocumentsService } from '../documents/documents.service';
-import { parseCSV, complexCartesianProduct } from '../../utils/csv';
+import { parseCSV, getScenariosFromParsedCSV, complexCartesianProduct } from '../../utils/csv';
 
 jest.mock('../../utils/csv');
 
@@ -652,38 +652,8 @@ describe('ScenarioDataService', () => {
       ];
 
       (parseCSV as jest.Mock).mockResolvedValue(mockParsedData);
-
-      const result = await service.processProvidedScenarios('test.json', mockCSVContent);
-
-      expect(result).toBeInstanceOf(Array);
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        title: 'Scenario 1',
-        ruleID: '',
-        filepath: 'test.json',
-      });
-      expect(result[1]).toMatchObject({
-        title: 'Scenario 2',
-        ruleID: '',
-        filepath: 'test.json',
-      });
-
-      expect(result[0]).toHaveProperty('variables');
-      expect(result[0]).toHaveProperty('expectedResults');
-      expect(result[1]).toHaveProperty('variables');
-      expect(result[1]).toHaveProperty('expectedResults');
-
-      if (result[0].variables) {
-        expect(result[0].variables).toEqual({
-          Age: '30',
-          Income: '50000',
-        });
-      }
-      if (result[0].expectedResults) {
-        expect(result[0].expectedResults).toEqual({
-          Eligible: true,
-        });
-      }
+      await service.processProvidedScenarios('test.json', mockCSVContent);
+      expect(getScenariosFromParsedCSV).toHaveBeenCalledWith(mockParsedData, 'test.json');
     });
 
     it('should throw an error if CSV content is empty', async () => {
@@ -692,6 +662,7 @@ describe('ScenarioDataService', () => {
       } as Express.Multer.File;
 
       (parseCSV as jest.Mock).mockResolvedValue([]);
+      (getScenariosFromParsedCSV as jest.Mock).mockRejectedValue(new Error('CSV content is empty or invalid'));
 
       await expect(service.processProvidedScenarios('test.json', mockCSVContent)).rejects.toThrow(
         'CSV content is empty or invalid',
@@ -706,6 +677,7 @@ describe('ScenarioDataService', () => {
       const mockParsedData = [['Title', 'Input: Age', 'Input: Income', 'Expected Result: Eligible']];
 
       (parseCSV as jest.Mock).mockResolvedValue(mockParsedData);
+      (getScenariosFromParsedCSV as jest.Mock).mockResolvedValue([]);
 
       const result = await service.processProvidedScenarios('test.json', mockCSVContent);
 
