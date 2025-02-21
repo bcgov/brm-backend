@@ -20,6 +20,7 @@ import { ScenarioDataService } from './api/scenarioData/scenarioData.service';
       load: [
         () => ({
           RULES_DIRECTORY: process.env.RULES_DIRECTORY || 'brms-rules/rules',
+          DEV_RULES_DIRECTORY: process.env.DEV_RULES_DIRECTORY || 'dev/brms-rules/rules',
         }),
       ],
     }),

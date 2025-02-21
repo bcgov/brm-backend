@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { RuleMappingController } from './ruleMapping.controller';
 import { RuleMappingService } from './ruleMapping.service';
-import { DocumentsService } from '../documents/documents.service';
+import { RuleDataModule } from '../ruleData/ruleData.module';
 
 @Module({
+  imports: [RuleDataModule],
   controllers: [RuleMappingController],
-  providers: [RuleMappingService, DocumentsService],
+  providers: [RuleMappingService, RuleDataModule],
   exports: [RuleMappingService],
 })
 export class RuleMappingModule {}

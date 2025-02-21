@@ -27,6 +27,7 @@ import { getScenariosFromParsedCSV } from './utils/csv';
 import { RuleMappingService } from './api/ruleMapping/ruleMapping.service';
 import { DocumentsService } from './api/documents/documents.service';
 import { ScenarioDataService } from './api/scenarioData/scenarioData.service';
+import { RuleDataService } from './api/ruleData/ruleData.service';
 
 interface CSVFilesForRule {
   testFilePath: string;
@@ -42,9 +43,10 @@ class CsvTestRunner {
 
   private configService = new ConfigService({ RULES_DIRECTORY });
   private logger = new Logger();
-  private decisionService = new DecisionsService(this.configService, this.logger);
   private documentsService = new DocumentsService(this.configService);
-  private ruleMappingService = new RuleMappingService(this.documentsService, this.configService);
+  private ruleDataService = new RuleDataService(null, null, this.documentsService, this.logger);
+  private decisionService = new DecisionsService(this.ruleDataService, this.logger);
+  private ruleMappingService = new RuleMappingService(this.ruleDataService, this.configService);
   public scenarioDataService = new ScenarioDataService(
     this.decisionService,
     this.ruleMappingService,

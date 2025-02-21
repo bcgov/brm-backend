@@ -7,9 +7,11 @@ import { readFileSafely, FileNotFoundError } from '../../utils/readFile';
 @Injectable()
 export class DocumentsService {
   rulesDirectory: string;
+  devRulesDirectory: string;
 
   constructor(private configService: ConfigService) {
     this.rulesDirectory = this.configService.get<string>('RULES_DIRECTORY');
+    this.devRulesDirectory = this.configService.get<string>('DEV_RULES_DIRECTORY');
   }
 
   // Go through the rules directory and return a list of all JSON files
@@ -38,9 +40,9 @@ export class DocumentsService {
   }
 
   // Get the content of a specific JSON file
-  async getFileContent(ruleFileName: string): Promise<Buffer> {
+  async getFileContent(ruleFileName: string, isDev: boolean = false): Promise<Buffer> {
     try {
-      return await readFileSafely(this.rulesDirectory, ruleFileName);
+      return await readFileSafely(isDev ? this.devRulesDirectory : this.rulesDirectory, ruleFileName);
     } catch (error) {
       if (error instanceof FileNotFoundError) {
         throw new HttpException('File not found', HttpStatus.NOT_FOUND);

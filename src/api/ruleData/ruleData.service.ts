@@ -112,6 +112,15 @@ export class RuleDataService {
     }
   }
 
+  async getRuleDataWithDraftByFilepath(filepath: string): Promise<RuleDraft> {
+    try {
+      const { ruleDraft } = await this.ruleDataModel.findOne({ filepath }).populate('ruleDraft').exec();
+      return ruleDraft as RuleDraft;
+    } catch (error) {
+      throw new Error(`Error getting draft for ${filepath}: ${error.message}`);
+    }
+  }
+
   async getRuleData(ruleId: string): Promise<RuleData> {
     try {
       const ruleData = await this.ruleDataModel.findOne({ _id: ruleId }).exec();
@@ -143,7 +152,7 @@ export class RuleDataService {
     if (ruleData?.ruleDraft) {
       const newDraft = new this.ruleDraftModel(ruleData.ruleDraft);
       const savedDraft = await newDraft.save();
-      ruleData.ruleDraft = savedDraft._id;
+      ruleData.ruleDraft = savedDraft._id as Types.ObjectId;
     }
     return ruleData;
   }
@@ -240,5 +249,48 @@ export class RuleDataService {
         this.updateRuleData(existingRule._id, { isPublished: true });
       }
     });
+  }
+
+  async getRuleFileFromReview(ruleFilepath: string) {
+    // Get the review branch name from the ruleData
+    const ruleData = await this.getRuleDataByFilepath(ruleFilepath);
+    if (!ruleData || !ruleData.reviewBranch) {
+      throw new Error('No branch in review');
+    }
+    const { reviewBranch } = ruleData;
+    try {
+      // Get the file from the review branch
+      const contentsUrl = `${GITHUB_RULES_REPO}/contents/rules/${ruleFilepath}`;
+      const getFileResponse = await axios.get(contentsUrl, {
+        params: { ref: reviewBranch }, // Ensure we're checking the correct branch
+      });
+      return getFileResponse.data;
+    } catch (error: any) {
+      if (error.response && error.response.status !== 404) {
+        throw error; // Rethrow if error is not due to the file not existing
+      }
+      return null;
+    }
+  }
+
+  async getContentForRule(ruleFilepath: string, version: string = 'inProduction'): Promise<Buffer> {
+    if (version === 'dev') {
+      const { content } = await this.getRuleDataWithDraftByFilepath(ruleFilepath);
+      const jsonString = JSON.stringify(content);
+      return Buffer.from(jsonString, 'utf-8');
+    }
+    if (version === 'inReview') {
+      const file = await this.getRuleFileFromReview(ruleFilepath);
+      if (!file || !file.content) {
+        throw new Error('File does not exist');
+      }
+      return Buffer.from(file.content, 'base64');
+    }
+    return await this.documentsService.getFileContent(ruleFilepath, version === 'inDev');
+  }
+
+  async getContentForRuleFromFilepath(rulePath: string, isDev: boolean = false): Promise<Buffer> {
+    const [filepath, version] = rulePath.split('?version=');
+    return this.getContentForRule(filepath, version || isDev ? 'inDev' : 'inProduction');
   }
 }

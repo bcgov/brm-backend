@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Post, Body, Put, Delete, HttpException, HttpStatus, Query } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { RuleDataService } from './ruleData.service';
 import { RuleData } from './ruleData.schema';
 import { RuleDraft } from './ruleDraft.schema';
@@ -30,8 +30,50 @@ export class RuleDataController {
     }
   }
 
+  @Get('/draft/filepath')
+  @ApiOperation({ summary: 'Get a rule draft from a given rule filepath' })
+  @ApiQuery({
+    name: 'filepath',
+    description: 'The filepath of the rule',
+    example: ruleExample.filepath,
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Rule draft retrieved successfully',
+    example: '676362648cb89c8b157adb5a',
+  })
+  async getRuleDraftByFilepath(@Query('filepath') filepath: string): Promise<RuleDraft> {
+    try {
+      return await this.ruleDataService.getRuleDataWithDraftByFilepath(filepath);
+    } catch (error) {
+      throw new HttpException('Error getting draft data', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('/filepath')
+  @ApiOperation({ summary: 'Get rule data by filepath' })
+  @ApiQuery({
+    name: 'filepath',
+    description: 'The filepath of the rule',
+    example: ruleExample.filepath,
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Rule data retrieved successfully',
+    type: RuleData,
+  })
+  async getRuleDataByFilepath(@Query('filepath') filepath: string): Promise<RuleData> {
+    try {
+      return await this.ruleDataService.getRuleDataByFilepath(filepath);
+    } catch (error) {
+      throw new HttpException('Error getting rule data by filepath', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @Get('/draft/:ruleId')
-  @ApiOperation({ summary: 'Get a rule draft ID from a given rule ID' })
+  @ApiOperation({ summary: 'Get a rule draft from a given rule ID' })
   @ApiParam({ name: 'ruleId', description: 'The ID of the rule', example: ruleExample._id })
   @ApiResponse({
     status: 200,

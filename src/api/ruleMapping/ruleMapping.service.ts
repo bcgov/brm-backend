@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Node, Edge, TraceObject, Field, RuleContent } from './ruleMapping.interface';
-import { DocumentsService } from '../documents/documents.service';
+import { RuleDataService } from '../ruleData/ruleData.service';
 import { ConfigService } from '@nestjs/config';
 import { RuleSchema, RuleField } from '../scenarioData/scenarioData.interface';
-
 export class InvalidRuleContent extends Error {
   constructor(message: string) {
     super(message);
@@ -15,7 +14,7 @@ export class InvalidRuleContent extends Error {
 export class RuleMappingService {
   rulesDirectory: string;
   constructor(
-    private documentsService: DocumentsService,
+    private ruleDataService: RuleDataService,
     private configService: ConfigService,
   ) {
     this.rulesDirectory = this.configService.get<string>('RULES_DIRECTORY');
@@ -177,9 +176,9 @@ export class RuleMappingService {
     return { inputs, outputs, resultOutputs };
   }
 
-  // generate a rule schema from a given local file
-  async ruleSchemaFile(ruleFileName: string): Promise<any> {
-    const fileContent = await this.documentsService.getFileContent(ruleFileName);
+  // generate a rule schema from a given rule filepath
+  async ruleSchemaFile(ruleFilepath: string): Promise<any> {
+    const fileContent = await this.ruleDataService.getContentForRuleFromFilepath(ruleFilepath);
     const ruleContent = await JSON.parse(fileContent.toString());
     return this.ruleSchema(ruleContent);
   }
@@ -262,8 +261,8 @@ export class RuleMappingService {
     return { inputs, resultOutputs };
   }
 
-  async inputOutputSchemaFile(ruleFileName: string): Promise<RuleSchema> {
-    const fileContent = await this.documentsService.getFileContent(ruleFileName);
+  async inputOutputSchemaFile(ruleFilepath: string): Promise<RuleSchema> {
+    const fileContent = await this.ruleDataService.getContentForRuleFromFilepath(ruleFilepath);
     const ruleContent = JSON.parse(fileContent.toString());
     return this.inputOutputSchema(ruleContent);
   }
