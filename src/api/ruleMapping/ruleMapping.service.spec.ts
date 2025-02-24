@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RuleMappingService, InvalidRuleContent } from './ruleMapping.service';
 import { Node, TraceObject, Edge, RuleContent } from './ruleMapping.interface';
-import { DocumentsService } from '../documents/documents.service';
 import { ConfigService } from '@nestjs/config';
+import { RuleDataService } from '../ruleData/ruleData.service';
 
 describe('RuleMappingService', () => {
   let service: RuleMappingService;
-  let documentsService: DocumentsService;
+  let ruleDataService: RuleDataService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RuleMappingService,
-        DocumentsService,
+        RuleDataService,
         {
-          provide: DocumentsService,
+          provide: RuleDataService,
           useValue: {
             getFileContent: jest.fn(),
           },
@@ -29,7 +29,7 @@ describe('RuleMappingService', () => {
     }).compile();
 
     service = module.get<RuleMappingService>(RuleMappingService);
-    documentsService = module.get<DocumentsService>(DocumentsService);
+    ruleDataService = module.get<RuleDataService>(RuleDataService);
   });
 
   it('should be defined', () => {
@@ -943,7 +943,7 @@ describe('RuleMappingService', () => {
       });
 
       const mockGetFileContent = jest.fn().mockResolvedValue(Buffer.from(mockFileContent));
-      documentsService.getFileContent = mockGetFileContent;
+      ruleDataService.getContentForRuleFromFilepath = mockGetFileContent;
 
       const filePath = 'path/to/mock/file.json';
       const result = await service.ruleSchemaFile(filePath);
@@ -1306,7 +1306,7 @@ describe('RuleMappingService', () => {
       });
 
       const mockGetFileContent = jest.fn().mockResolvedValue(Buffer.from(mockFileContent));
-      documentsService.getFileContent = mockGetFileContent;
+      ruleDataService.getContentForRuleFromFilepath = mockGetFileContent;
 
       const filePath = 'path/to/mock/file.json';
       const result = await service.inputOutputSchemaFile(filePath);

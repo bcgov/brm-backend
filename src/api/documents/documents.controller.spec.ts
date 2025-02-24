@@ -55,7 +55,7 @@ describe('DocumentsController', () => {
 
       jest.spyOn(documentsService, 'getFileContent').mockResolvedValueOnce(mockFileContent);
 
-      await documentsController.getRuleFile(ruleFileName, res);
+      await documentsController.getRuleFile(ruleFileName, 'false', res);
 
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
       expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', `attachment; filename=${ruleFileName}`);
@@ -72,7 +72,7 @@ describe('DocumentsController', () => {
 
       jest.spyOn(documentsService, 'getFileContent').mockRejectedValueOnce(mockError);
 
-      await expect(documentsController.getRuleFile(ruleFileName, res)).rejects.toThrow(
+      await expect(documentsController.getRuleFile(ruleFileName, 'false', res)).rejects.toThrow(
         new HttpException(mockError.message, HttpStatus.INTERNAL_SERVER_ERROR),
       );
     });
@@ -89,7 +89,7 @@ describe('DocumentsController', () => {
 
       jest.spyOn(documentsService, 'getFileContent').mockResolvedValueOnce(mockFileContent);
 
-      await expect(documentsController.getRuleFile(ruleFileName, res)).rejects.toThrow(
+      await expect(documentsController.getRuleFile(ruleFileName, 'false', res)).rejects.toThrow(
         new HttpException('Failed to send response', HttpStatus.INTERNAL_SERVER_ERROR),
       );
 

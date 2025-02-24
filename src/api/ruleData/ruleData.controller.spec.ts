@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RuleDataController } from './ruleData.controller';
 import { RuleDataService } from './ruleData.service';
 import { RuleData } from './ruleData.schema';
-import { mockRuleData, mockServiceProviders } from './ruleData.service.spec';
+import { mockRuleData, mockRuleDataServiceProviders } from './ruleData.service.spec';
 
 describe('RuleDataController', () => {
   let controller: RuleDataController;
@@ -11,7 +11,7 @@ describe('RuleDataController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RuleDataController],
-      providers: mockServiceProviders,
+      providers: mockRuleDataServiceProviders,
     }).compile();
 
     controller = module.get<RuleDataController>(RuleDataController);

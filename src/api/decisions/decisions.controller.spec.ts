@@ -34,7 +34,12 @@ describe('DecisionsController', () => {
       trace: false,
     };
     await controller.evaluateDecisionByContent(dto);
-    expect(service.runDecisionByContent).toHaveBeenCalledWith(dto.ruleContent, dto.context, { trace: dto.trace });
+    expect(service.runDecisionByContent).toHaveBeenCalledWith(
+      dto.ruleContent,
+      dto.context,
+      { trace: dto.trace },
+      undefined,
+    );
   });
 
   it('should throw an error when runDecision fails', async () => {
@@ -65,7 +70,7 @@ describe('DecisionsController', () => {
     const dto: EvaluateDecisionDto = { context: { value: 'context' }, trace: false };
     const ruleFileName = 'rule';
     await controller.evaluateDecisionByFile(ruleFileName, dto);
-    expect(service.runDecisionByFile).toHaveBeenCalledWith(ruleFileName, dto.context, { trace: dto.trace });
+    expect(service.runDecisionByFile).toHaveBeenCalledWith(ruleFileName, dto.context, { trace: dto.trace }, undefined);
   });
 
   it('should throw an error when runDecisionByFile fails', async () => {

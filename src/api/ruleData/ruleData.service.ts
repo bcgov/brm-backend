@@ -7,6 +7,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { RuleData, RuleDataDocument } from './ruleData.schema';
 import { RuleDraft, RuleDraftDocument } from './ruleDraft.schema';
 import { deriveNameFromFilepath } from '../../utils/helpers';
+import { RULE_VERSION } from './ruleVersion';
 import { CategoryObject, PaginationDto } from './dto/pagination.dto';
 
 const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO || 'https://api.github.com/repos/bcgov/brms-rules';
@@ -251,6 +252,13 @@ export class RuleDataService {
     });
   }
 
+  /**
+   * Retrieves the content for a rule from the "inReview" version of the rule
+   *
+   * @param ruleFilepath - The file path of the rule.
+   * @returns A promise that resolves to a Buffer containing the rule content.
+   * @throws Will throw an error if the file does not exist or if there is an issue retrieving the content.
+   */
   async getRuleFileFromReview(ruleFilepath: string) {
     // Get the review branch name from the ruleData
     const ruleData = await this.getRuleDataByFilepath(ruleFilepath);
@@ -273,24 +281,46 @@ export class RuleDataService {
     }
   }
 
-  async getContentForRule(ruleFilepath: string, version: string = 'inProduction'): Promise<Buffer> {
-    if (version === 'dev') {
+  /**
+   * Retrieves the content for a rule from the specified file path and version.
+   *
+   * @param ruleFilepath - The file path of the rule.
+   * @param version - The version of the rule to retrieve. Defaults to production version of rule
+   * @returns A promise that resolves to a Buffer containing the rule content.
+   * @throws Will throw an error if the file does not exist or if there is an issue retrieving the content.
+   */
+  async getContentForRule(
+    ruleFilepath: string,
+    version: keyof typeof RULE_VERSION = RULE_VERSION.inProduction,
+  ): Promise<Buffer> {
+    if (version === RULE_VERSION.draft) {
       const { content } = await this.getRuleDataWithDraftByFilepath(ruleFilepath);
       const jsonString = JSON.stringify(content);
       return Buffer.from(jsonString, 'utf-8');
     }
-    if (version === 'inReview') {
+    if (version === RULE_VERSION.inReview) {
       const file = await this.getRuleFileFromReview(ruleFilepath);
       if (!file || !file.content) {
         throw new Error('File does not exist');
       }
       return Buffer.from(file.content, 'base64');
     }
-    return await this.documentsService.getFileContent(ruleFilepath, version === 'inDev');
+    return await this.documentsService.getFileContent(ruleFilepath, version === RULE_VERSION.inDev);
   }
 
+  /**
+   * Retrieves the content for a rule from the specified file path.
+   *
+   * @param rulePath - The path to the rule file, which can include a version query parameter (e.g., '?version=draft').
+   * @param isDev - Optional flag indicating whether to use the development version of the rule. Defaults to `false`.
+   * @returns A promise that resolves to a Buffer containing the rule content.
+   */
   async getContentForRuleFromFilepath(rulePath: string, isDev: boolean = false): Promise<Buffer> {
-    const [filepath, version] = rulePath.split('?version=');
-    return this.getContentForRule(filepath, version || isDev ? 'inDev' : 'inProduction');
+    try {
+      const [filepath, version] = rulePath.split('?version='); // Rules can specify draft or inReview with a query param
+      return this.getContentForRule(filepath, version || isDev ? RULE_VERSION.inDev : RULE_VERSION.inProduction);
+    } catch (error) {
+      throw new Error(`Failed to get rule content: ${error.message}`);
+    }
   }
 }

@@ -4,11 +4,11 @@ import { ScenarioDataService } from './scenarioData.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Types, Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
+import { mockRuleDataServiceProviders } from '../ruleData/ruleData.service.spec';
 import { ScenarioData, ScenarioDataDocument } from './scenarioData.schema';
 import { RuleSchema } from './scenarioData.interface';
 import { DecisionsService } from '../decisions/decisions.service';
 import { RuleMappingService } from '../ruleMapping/ruleMapping.service';
-import { DocumentsService } from '../documents/documents.service';
 import { parseCSV, getScenariosFromParsedCSV, complexCartesianProduct } from '../../utils/csv';
 
 jest.mock('../../utils/csv');
@@ -56,6 +56,7 @@ describe('ScenarioDataService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...mockRuleDataServiceProviders,
         DecisionsService,
         RuleMappingService,
         ScenarioDataService,
@@ -63,7 +64,6 @@ describe('ScenarioDataService', () => {
           provide: getModelToken(ScenarioData.name),
           useValue: MockScenarioDataModel,
         },
-        DocumentsService,
         {
           provide: ConfigService,
           useValue: {

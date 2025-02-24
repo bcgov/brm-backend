@@ -25,7 +25,12 @@ export class DecisionsService {
     this.devEngine = new ZenEngine({ loader: loader(false) });
   }
 
-  async runDecisionByContent(ruleContent: RuleContent, context: object, options: ZenEvaluateOptions, isDev: boolean) {
+  async runDecisionByContent(
+    ruleContent: RuleContent,
+    context: object,
+    options: ZenEvaluateOptions,
+    isDev: boolean = false,
+  ) {
     const validator = new ValidationService();
     const ruleInputs = ruleContent?.nodes?.filter((node) => node.type === 'inputNode')[0]?.content;
     try {
@@ -43,9 +48,9 @@ export class DecisionsService {
     }
   }
 
-  async runDecisionByFile(ruleFileName: string, context: object, options: ZenEvaluateOptions, isDev: boolean) {
+  async runDecisionByFile(ruleFileName: string, context: object, options: ZenEvaluateOptions, isDev: boolean = false) {
     try {
-      const decisionFile = this.ruleDataService.getContentForRuleFromFilepath(ruleFileName, isDev);
+      const decisionFile = await this.ruleDataService.getContentForRuleFromFilepath(ruleFileName, isDev);
       const content: RuleContent = JSON.parse(decisionFile.toString()); // Convert file buffer to rulecontent
       return this.runDecisionByContent(content, context, options, isDev);
     } catch (error) {

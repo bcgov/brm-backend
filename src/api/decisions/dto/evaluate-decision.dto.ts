@@ -24,7 +24,7 @@ export class EvaluateDecisionDto {
     description: '',
   })
   @IsBoolean()
-  isDev: boolean;
+  isDev?: boolean;
 }
 
 @ApiSchema({ description: 'DTO for evaluating a decision with rule content' })
