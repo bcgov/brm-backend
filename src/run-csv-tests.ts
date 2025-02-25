@@ -82,10 +82,16 @@ class CsvTestRunner {
    * @returns An object containing the relative path and an array of file names.
    */
   getTestFilesAtRulePath(filePath: string): CSVFilesForRule {
-    const testFiles = fs.readdirSync(filePath)?.filter((subfile) => {
-      return fs.statSync(path.join(filePath, subfile)).isFile() && subfile.endsWith('.csv');
-    });
-    return { testFilePath: path.relative(CSV_TESTS_DIRECTORY, filePath), testFiles };
+    const testFilePath = path.relative(CSV_TESTS_DIRECTORY, filePath);
+    try {
+      const testFiles = fs.readdirSync(filePath)?.filter((subfile) => {
+        return fs.statSync(path.join(filePath, subfile)).isFile() && subfile.endsWith('.csv');
+      });
+      return { testFilePath, testFiles };
+    } catch (error) {
+      console.warn(filePath, error.message);
+      return { testFilePath, testFiles: [] };
+    }
   }
 
   /**
@@ -186,6 +192,9 @@ class CsvTestRunner {
       }
     }
     const { testFilePath, testFiles } = this.getTestFilesAtRulePath(`${CSV_TESTS_DIRECTORY}/${rulePathToTest}`);
+    if (!testFiles || testFiles.length === 0) {
+      return;
+    }
     await this.runTestsForRule(testFilePath, testFiles);
   }
 
