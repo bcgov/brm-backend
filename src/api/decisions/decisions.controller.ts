@@ -21,9 +21,9 @@ export class DecisionsController {
     description: 'Decision evaluated successfully',
     schema: { example: decisionExample },
   })
-  async evaluateDecisionByContent(@Body() { ruleContent, context, trace, isDev }: EvaluateDecisionWithContentDto) {
+  async evaluateDecisionByContent(@Body() { ruleContent, context, trace }: EvaluateDecisionWithContentDto) {
     try {
-      return await this.decisionsService.runDecisionByContent(ruleContent, context, { trace }, isDev);
+      return await this.decisionsService.runDecisionByContent(ruleContent, context, { trace });
     } catch (error) {
       if (error instanceof ValidationError) {
         throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -52,10 +52,10 @@ export class DecisionsController {
   })
   async evaluateDecisionByFile(
     @Query('ruleFileName') ruleFileName: string,
-    @Body() { context, trace, isDev }: EvaluateDecisionDto,
+    @Body() { context, trace }: EvaluateDecisionDto,
   ) {
     try {
-      return await this.decisionsService.runDecisionByFile(ruleFileName, context, { trace }, isDev);
+      return await this.decisionsService.runDecisionByFile(ruleFileName, context, { trace });
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -83,7 +83,7 @@ describe('DecisionsService', () => {
       await service.runDecision(null, ruleFileName, context, options);
 
       // Verify that readFileSafely was called, indicating fallback to runDecisionByFile
-      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName, false);
+      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName);
       expect(mockEngine.createDecision).toHaveBeenCalledWith(content);
       expect(mockDecision.evaluate).toHaveBeenCalledWith(context, options);
     });
@@ -143,7 +143,7 @@ describe('DecisionsService', () => {
         Buffer.from(JSON.stringify(content)),
       );
       await service.runDecisionByFile(ruleFileName, context, options);
-      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName, false);
+      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName);
       expect(mockEngine.createDecision).toHaveBeenCalledWith(content);
       expect(mockDecision.evaluate).toHaveBeenCalledWith(context, options);
     });

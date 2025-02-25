@@ -1,10 +1,6 @@
 # Install the app dependencies in a full Node docker image
 FROM registry.access.redhat.com/ubi9/nodejs-20:latest
 
-# Set the environment variables
-ARG RULES_REPO_BRANCH
-ENV RULES_REPO_BRANCH=${RULES_REPO_BRANCH}
-
 # Set the working directory
 WORKDIR /opt/app-root/src
 
@@ -18,8 +14,15 @@ RUN npm ci
 # Copy the application code
 COPY . ./
 
-# Clone the rules repository
-RUN git clone -b ${RULES_REPO_BRANCH} https://github.com/bcgov/brms-rules.git brms-rules
+# Clone the production rules repository into rules/prod
+RUN git clone -b main https://github.com/bcgov/brms-rules.git ./tmp-brm-rules && \
+    mv ./tmp-brm-rules/rules/* rules/prod && \
+    rm -rf /tmp/brms-rules
+
+# Clone the dev rules repository into rules/dev
+RUN git clone -b dev https://github.com/bcgov/brms-rules.git ./tmp-brm-rules && \
+    mv ./tmp-brm-rules/rules/* rules/dev && \
+    rm -rf /tmp/brms-rules
 
 # Start the application
 CMD ["npm", "start"]

@@ -9,7 +9,6 @@ import { RuleDataService } from '../ruleData/ruleData.service';
 @Injectable()
 export class DecisionsService {
   engine: ZenEngine;
-  devEngine: ZenEngine;
 
   constructor(
     private ruleDataService: RuleDataService,
@@ -17,26 +16,17 @@ export class DecisionsService {
   ) {
     // Create a loader function for linked rules
     // This is where we will load different versions of the rules if necessary
-    const loader = (isDev: boolean) => async (key: string) => {
-      return this.ruleDataService.getContentForRuleFromFilepath(key, isDev);
-    };
+    const loader = async (key: string) => this.ruleDataService.getContentForRuleFromFilepath(key, 'prod');
     // Create the engines for running the rules (one for dev and one for prod)
-    this.engine = new ZenEngine({ loader: loader(true) });
-    this.devEngine = new ZenEngine({ loader: loader(false) });
+    this.engine = new ZenEngine({ loader });
   }
 
-  async runDecisionByContent(
-    ruleContent: RuleContent,
-    context: object,
-    options: ZenEvaluateOptions,
-    isDev: boolean = false,
-  ) {
+  async runDecisionByContent(ruleContent: RuleContent, context: object, options: ZenEvaluateOptions) {
     const validator = new ValidationService();
     const ruleInputs = ruleContent?.nodes?.filter((node) => node.type === 'inputNode')[0]?.content;
     try {
       validator.validateInputs(ruleInputs, context);
-      const engine = isDev ? this.devEngine : this.engine;
-      const decision = engine.createDecision(ruleContent);
+      const decision = this.engine.createDecision(ruleContent);
       return await decision.evaluate(context, options);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -48,11 +38,11 @@ export class DecisionsService {
     }
   }
 
-  async runDecisionByFile(ruleFileName: string, context: object, options: ZenEvaluateOptions, isDev: boolean = false) {
+  async runDecisionByFile(ruleFileName: string, context: object, options: ZenEvaluateOptions) {
     try {
-      const decisionFile = await this.ruleDataService.getContentForRuleFromFilepath(ruleFileName, isDev);
+      const decisionFile = await this.ruleDataService.getContentForRuleFromFilepath(ruleFileName, 'prod');
       const content: RuleContent = JSON.parse(decisionFile.toString()); // Convert file buffer to rulecontent
-      return this.runDecisionByContent(content, context, options, isDev);
+      return this.runDecisionByContent(content, context, options);
     } catch (error) {
       if (error instanceof FileNotFoundError) {
         throw new HttpException('Rule not found', HttpStatus.NOT_FOUND);
@@ -63,17 +53,11 @@ export class DecisionsService {
   }
 
   /** Run the decision by content if it exists, otherwise run by filename */
-  async runDecision(
-    ruleContent: RuleContent,
-    ruleFileName: string,
-    context: object,
-    options: ZenEvaluateOptions,
-    isDev: boolean = false,
-  ) {
+  async runDecision(ruleContent: RuleContent, ruleFileName: string, context: object, options: ZenEvaluateOptions) {
     if (ruleContent) {
-      return await this.runDecisionByContent(ruleContent, context, options, isDev);
+      return await this.runDecisionByContent(ruleContent, context, options);
     } else {
-      return await this.runDecisionByFile(ruleFileName, context, options, isDev);
+      return await this.runDecisionByFile(ruleFileName, context, options);
     }
   }
 }

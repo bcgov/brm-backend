@@ -15,6 +15,7 @@ const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO || 'https://api.github.c
 @Injectable()
 export class RuleDataService {
   private categories: Array<CategoryObject> = [];
+
   constructor(
     @InjectModel(RuleData.name) private ruleDataModel: Model<RuleDataDocument>,
     @InjectModel(RuleDraft.name) private ruleDraftModel: Model<RuleDraftDocument>,
@@ -240,7 +241,8 @@ export class RuleDataService {
    */
   async addUnsyncedFiles(existingRules: RuleData[]) {
     // Find rules not yet defined in db (but with an exisitng JSON file) and add them
-    const jsonRuleDocuments = await this.documentsService.getAllJSONFiles();
+    const ruleDir = 'prod'; // Currently sycning with prod rules
+    const jsonRuleDocuments = await this.documentsService.getAllJSONFiles(ruleDir);
     jsonRuleDocuments.forEach((filepath: string) => {
       const existingRule = existingRules.find((rule) => rule.filepath === filepath);
       if (!existingRule) {
@@ -305,20 +307,20 @@ export class RuleDataService {
       }
       return Buffer.from(file.content, 'base64');
     }
-    return await this.documentsService.getFileContent(ruleFilepath, version === RULE_VERSION.inDev);
+    return await this.documentsService.getFileContent(ruleFilepath);
   }
 
   /**
    * Retrieves the content for a rule from the specified file path.
    *
    * @param rulePath - The path to the rule file, which can include a version query parameter (e.g., '?version=draft').
-   * @param isDev - Optional flag indicating whether to use the development version of the rule. Defaults to `false`.
+   * @param ruleDir - Rule directory such as /dev or /prod
    * @returns A promise that resolves to a Buffer containing the rule content.
    */
-  async getContentForRuleFromFilepath(rulePath: string, isDev: boolean = false): Promise<Buffer> {
+  async getContentForRuleFromFilepath(rulePath: string, ruleDir: string = ''): Promise<Buffer> {
     try {
       const [filepath, version] = rulePath.split('?version='); // Rules can specify draft or inReview with a query param
-      return this.getContentForRule(filepath, version || isDev ? RULE_VERSION.inDev : RULE_VERSION.inProduction);
+      return this.getContentForRule(`${ruleDir}/${filepath}`, version as keyof typeof RULE_VERSION);
     } catch (error) {
       throw new Error(`Failed to get rule content: ${error.message}`);
     }

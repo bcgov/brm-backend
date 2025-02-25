@@ -6,17 +6,16 @@ import { readFileSafely, FileNotFoundError } from '../../utils/readFile';
 
 @Injectable()
 export class DocumentsService {
-  rulesDirectory: string;
-  devRulesDirectory: string;
+  baseRulesDirectory: string;
 
   constructor(private configService: ConfigService) {
-    this.rulesDirectory = this.configService.get<string>('RULES_DIRECTORY');
-    this.devRulesDirectory = this.configService.get<string>('DEV_RULES_DIRECTORY');
+    this.baseRulesDirectory = this.configService.get<string>('RULES_DIRECTORY');
   }
 
   // Go through the rules directory and return a list of all JSON files
-  async getAllJSONFiles(directory: string = this.rulesDirectory): Promise<string[]> {
+  async getAllJSONFiles(ruleDir: string = ''): Promise<string[]> {
     const jsonFiles: string[] = [];
+    const directory = path.join(this.baseRulesDirectory, ruleDir);
 
     async function readDirectory(dir: string, baseDir: string) {
       const files = await fsPromises.readdir(dir, { withFileTypes: true });
@@ -40,9 +39,9 @@ export class DocumentsService {
   }
 
   // Get the content of a specific JSON file
-  async getFileContent(ruleFileName: string, isDev: boolean = false): Promise<Buffer> {
+  async getFileContent(ruleFileName: string): Promise<Buffer> {
     try {
-      return await readFileSafely(isDev ? this.devRulesDirectory : this.rulesDirectory, ruleFileName);
+      return await readFileSafely(this.baseRulesDirectory, ruleFileName);
     } catch (error) {
       if (error instanceof FileNotFoundError) {
         throw new HttpException('File not found', HttpStatus.NOT_FOUND);

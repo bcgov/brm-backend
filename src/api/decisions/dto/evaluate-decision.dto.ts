@@ -18,13 +18,6 @@ export class EvaluateDecisionDto {
   })
   @IsBoolean()
   trace: boolean;
-
-  @ApiProperty({
-    example: false,
-    description: '',
-  })
-  @IsBoolean()
-  isDev?: boolean;
 }
 
 @ApiSchema({ description: 'DTO for evaluating a decision with rule content' })

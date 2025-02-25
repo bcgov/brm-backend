@@ -29,11 +29,6 @@ export class DocumentsController {
     example: ruleExample.filepath,
     required: true,
   })
-  @ApiQuery({
-    name: 'isDevRule',
-    description: '',
-    example: false,
-  })
   @ApiResponse({
     status: 200,
     description: 'Rule file retrieved successfully',
@@ -41,12 +36,8 @@ export class DocumentsController {
       example: ruleContentExample,
     },
   })
-  async getRuleFile(
-    @Query('ruleFileName') ruleFileName: string,
-    @Query('isDevRule') isDevRule: string,
-    @Res() res: Response,
-  ) {
-    const fileContent = await this.documentsService.getFileContent(ruleFileName, isDevRule === 'true');
+  async getRuleFile(@Query('ruleFileName') ruleFileName: string, @Res() res: Response) {
+    const fileContent = await this.documentsService.getFileContent(ruleFileName);
 
     try {
       res.setHeader('Content-Type', 'application/json');
