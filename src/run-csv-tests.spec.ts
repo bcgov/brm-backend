@@ -121,6 +121,11 @@ describe('CsvTestRunner', () => {
   it('should run tests for specified rule path', async () => {
     const rulePathToTest = 'rules/some-rule';
     runner.runTestsForRule = jest.fn();
+    runner.getTestFilesAtRulePath = jest.fn();
+    (runner.getTestFilesAtRulePath as jest.Mock).mockReturnValue({
+      testFilePath: path.relative('brms-rules/tests', rulePathToTest),
+      testFiles: ['file.csv'],
+    });
     await runner.runTestsForSpecifiedRulePath(rulePathToTest);
     expect(runner.runTestsForRule).toHaveBeenCalled();
   });

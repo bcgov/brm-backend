@@ -1,10 +1,10 @@
-
 name: CSV Rule Tests
 
 on:
   push:
     branches:
       - main
+      - dev
       - feature/pipeline-rule-tests
   pull_request:
     branches:
@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Clone additional repository
-        run: git clone -b feature/pipeline-rule-tests https://github.com/bcgov/brms-rules.git brms-rules
+        run: git clone -b dev https://github.com/bcgov/brms-rules.git brms-rules
 
       - name: Run CSV tests
         run: npm run test:rules
