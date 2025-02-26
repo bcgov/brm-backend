@@ -60,13 +60,8 @@ class CsvTestRunner {
    */
   convertCsvToArray(csv: string): string[][] {
     return csv.split('\n').map((row) => {
-      const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
-      const matches = [];
-      let match;
-      while ((match = regex.exec(row)) !== null) {
-        matches.push(match[1].replace(/(^"|"$)/g, ''));
-      }
-      return matches;
+      const regex = /(".*?"|[^",]+|(?<=,)(?=,))/g;
+      return row.match(regex);
     });
   }
 
@@ -138,15 +133,21 @@ class CsvTestRunner {
     this.ruleStats.testCount++;
     const fullTestFilePath = `${CSV_TESTS_DIRECTORY}/${testFilePath}/${testFile}`;
     const testCSVFileContent = await fs.promises.readFile(fullTestFilePath, 'utf8');
-    const testFileCSV: string[][] = this.convertCsvToArray(testCSVFileContent);
+    const testFileCSV: string[][] = this.convertCsvToArray(testCSVFileContent.trim());
     const csvScenarios = getScenariosFromParsedCSV(testFileCSV, testFilePath);
     const rulePath = `${testFilePath}.json`;
+    const hasNoExpectedResults = csvScenarios.some((scenario) => scenario.expectedResults.length === 0);
+    if (hasNoExpectedResults) {
+      console.warn(`\tMissing expected results for file ${testFile}`);
+    }
     const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
       rulePath,
       null,
       csvScenarios,
     );
-    console.info(`\tScenarios for file ${testFile}: ${allTestsPassed ? chalk.green('PASSED') : chalk.red('FAILED')}`);
+    console.info(
+      `\tScenarios for file ${testFile}: ${allTestsPassed ? (hasNoExpectedResults ? chalk.yellow('PASSED WITH WARNING') : chalk.green('PASSED')) : chalk.red('FAILED')}`,
+    );
     if (!allTestsPassed) {
       this.ruleStats.failedCount++;
       this.failedTests.push(`${testFilePath}/${testFile}`);
@@ -225,11 +226,9 @@ class CsvTestRunner {
     // Gets all paths that have CSV test files in them
     const csvTestPaths = this.getTestPathsAndFiles(CSV_TESTS_DIRECTORY);
     // Run tests for each rule
-    await Promise.all(
-      csvTestPaths.map(async ({ testFilePath, testFiles }) => {
-        await this.runTestsForRule(testFilePath, testFiles);
-      }),
-    );
+    for (const { testFilePath, testFiles } of csvTestPaths) {
+      await this.runTestsForRule(testFilePath, testFiles);
+    }
     this.showFinalTestResults();
     process.exit(0);
   }
