@@ -59,7 +59,15 @@ class CsvTestRunner {
    * @returns A 2D array representing the CSV content.
    */
   convertCsvToArray(csv: string): string[][] {
-    return csv.split('\n').map((row) => row.split(','));
+    return csv.split('\n').map((row) => {
+      const regex = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+      const matches = [];
+      let match;
+      while ((match = regex.exec(row)) !== null) {
+        matches.push(match[1].replace(/(^"|"$)/g, ''));
+      }
+      return matches;
+    });
   }
 
   /**
