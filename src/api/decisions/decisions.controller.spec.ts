@@ -29,17 +29,19 @@ describe('DecisionsController', () => {
 
   it('should call runDecisionByContent with correct parameters', async () => {
     const dto: EvaluateDecisionWithContentDto = {
-      ruleContent: { nodes: [], edges: [] },
+      ruleContent: JSON.stringify({ nodes: [], edges: [] }),
       context: { value: 'context' },
       trace: false,
     };
     await controller.evaluateDecisionByContent(dto);
-    expect(service.runDecisionByContent).toHaveBeenCalledWith(dto.ruleContent, dto.context, { trace: dto.trace });
+    expect(service.runDecisionByContent).toHaveBeenCalledWith(JSON.parse(dto.ruleContent), dto.context, {
+      trace: dto.trace,
+    });
   });
 
   it('should throw an error when runDecision fails', async () => {
     const dto: EvaluateDecisionWithContentDto = {
-      ruleContent: { nodes: [], edges: [] },
+      ruleContent: JSON.stringify({ nodes: [], edges: [] }),
       context: { value: 'context' },
       trace: false,
     };
@@ -49,7 +51,7 @@ describe('DecisionsController', () => {
 
   it('should throw a ValidationError when runDecision fails', async () => {
     const dto: EvaluateDecisionWithContentDto = {
-      ruleContent: { nodes: [], edges: [] },
+      ruleContent: JSON.stringify({ nodes: [], edges: [] }),
       context: { value: 'context' },
       trace: false,
     };

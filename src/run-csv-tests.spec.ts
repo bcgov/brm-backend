@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getScenariosFromParsedCSV } from './utils/csv';
 import { CsvTestRunner } from './run-csv-tests';
 
 jest.mock('fs', () => ({
@@ -93,6 +94,7 @@ describe('CsvTestRunner', () => {
     const testFilePath = 'some/path';
     const testFile = 'test.csv';
     (fs.promises.readFile as jest.Mock).mockResolvedValue('a,b,c\n1,2,3');
+    (getScenariosFromParsedCSV as jest.Mock).mockReturnValue([]);
     (runner.scenarioDataService.getCSVForRuleRun as jest.Mock).mockResolvedValue({
       allTestsPassed: true,
       csvContent: 'a,b,c\n1,2,3',

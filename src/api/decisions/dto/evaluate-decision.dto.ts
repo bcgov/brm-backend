@@ -1,6 +1,5 @@
 import { ApiProperty, ApiSchema } from '@nestjs/swagger';
 import { IsBoolean, IsObject } from 'class-validator';
-import { RuleContent } from 'src/api/ruleMapping/ruleMapping.interface';
 import { ruleContentExample, ruleInputs } from '../../../examples/rule.example';
 
 @ApiSchema({ description: 'DTO for evaluating a decision' })
@@ -28,5 +27,5 @@ export class EvaluateDecisionWithContentDto extends EvaluateDecisionDto {
       'The rule content containing nodes and edges that define the decision logic. The nodes represent the decision logic components and the edges represent the connections between them.',
   })
   @IsObject()
-  ruleContent: RuleContent;
+  ruleContent: string;
 }
