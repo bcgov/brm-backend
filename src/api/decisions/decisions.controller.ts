@@ -23,11 +23,12 @@ export class DecisionsController {
   })
   async evaluateDecisionByContent(@Body() { ruleContent, context, trace }: EvaluateDecisionWithContentDto) {
     try {
-      return await this.decisionsService.runDecisionByContent(ruleContent, context, { trace });
+      return await this.decisionsService.runDecisionByContent(JSON.parse(ruleContent), context, { trace });
     } catch (error) {
       if (error instanceof ValidationError) {
         throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
       } else {
+        console.error(error);
         throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
