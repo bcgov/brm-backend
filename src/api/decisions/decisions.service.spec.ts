@@ -21,6 +21,7 @@ describe('DecisionsService', () => {
   let validationService: ValidationService;
   let mockEngine: Partial<ZenEngine>;
   let mockDecision: Partial<ZenDecision>;
+  const ruleDir = 'prod';
 
   beforeEach(async () => {
     mockDecision = {
@@ -83,7 +84,7 @@ describe('DecisionsService', () => {
       await service.runDecision(null, ruleFileName, context, options);
 
       // Verify that readFileSafely was called, indicating fallback to runDecisionByFile
-      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName);
+      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName, ruleDir);
       expect(mockEngine.createDecision).toHaveBeenCalledWith(content);
       expect(mockDecision.evaluate).toHaveBeenCalledWith(context, options);
     });
@@ -143,7 +144,7 @@ describe('DecisionsService', () => {
         Buffer.from(JSON.stringify(content)),
       );
       await service.runDecisionByFile(ruleFileName, context, options);
-      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName);
+      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName, ruleDir);
       expect(mockEngine.createDecision).toHaveBeenCalledWith(content);
       expect(mockDecision.evaluate).toHaveBeenCalledWith(context, options);
     });

@@ -61,7 +61,10 @@ class CsvTestRunner {
    * @returns A 2D array representing the CSV content.
    */
   convertCsvToArray(csv: string): string[][] {
-    return csv.split('\n').map((row) => row.split(','));
+    return csv.split('\n').map((row) => {
+      const regex = /(".*?"|[^",]+|(?<=,)(?=,))/g;
+      return row.match(regex);
+    });
   }
 
   /**
@@ -84,10 +87,16 @@ class CsvTestRunner {
    * @returns An object containing the relative path and an array of file names.
    */
   getTestFilesAtRulePath(filePath: string): CSVFilesForRule {
-    const testFiles = fs.readdirSync(filePath)?.filter((subfile) => {
-      return fs.statSync(path.join(filePath, subfile)).isFile() && subfile.endsWith('.csv');
-    });
-    return { testFilePath: path.relative(CSV_TESTS_DIRECTORY, filePath), testFiles };
+    const testFilePath = path.relative(CSV_TESTS_DIRECTORY, filePath);
+    try {
+      const testFiles = fs.readdirSync(filePath)?.filter((subfile) => {
+        return fs.statSync(path.join(filePath, subfile)).isFile() && subfile.endsWith('.csv');
+      });
+      return { testFilePath, testFiles };
+    } catch (error) {
+      console.warn(filePath, error.message);
+      return { testFilePath, testFiles: [] };
+    }
   }
 
   /**
@@ -127,16 +136,22 @@ class CsvTestRunner {
     this.ruleStats.testCount++;
     const fullTestFilePath = `${CSV_TESTS_DIRECTORY}/${testFilePath}/${testFile}`;
     const testCSVFileContent = await fs.promises.readFile(fullTestFilePath, 'utf8');
-    const testFileCSV: string[][] = this.convertCsvToArray(testCSVFileContent);
+    const testFileCSV: string[][] = this.convertCsvToArray(testCSVFileContent.trim());
     const csvScenarios = getScenariosFromParsedCSV(testFileCSV, testFilePath);
     const rulePath = `${testFilePath}.json`;
+    const hasNoExpectedResults = csvScenarios.some((scenario) => scenario.expectedResults.length === 0);
+    if (hasNoExpectedResults) {
+      console.warn(`\tMissing expected results for file ${testFile}`);
+    }
     const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
-      ruleDir,
       rulePath,
       null,
+      ruleDir,
       csvScenarios,
     );
-    console.info(`\tScenarios for file ${testFile}: ${allTestsPassed ? chalk.green('PASSED') : chalk.red('FAILED')}`);
+    console.info(
+      `\tScenarios for file ${testFile}: ${allTestsPassed ? (hasNoExpectedResults ? chalk.yellow('PASSED WITH WARNING') : chalk.green('PASSED')) : chalk.red('FAILED')}`,
+    );
     if (!allTestsPassed) {
       this.ruleStats.failedCount++;
       this.failedTests.push(`${testFilePath}/${testFile}`);
@@ -191,6 +206,9 @@ class CsvTestRunner {
       }
     }
     const { testFilePath, testFiles } = this.getTestFilesAtRulePath(`${CSV_TESTS_DIRECTORY}/${rulePathToTest}`);
+    if (!testFiles || testFiles.length === 0) {
+      return;
+    }
     await this.runTestsForRule(ruleDir, testFilePath, testFiles);
   }
 
@@ -213,11 +231,9 @@ class CsvTestRunner {
     // Gets all paths that have CSV test files in them
     const csvTestPaths = this.getTestPathsAndFiles(CSV_TESTS_DIRECTORY);
     // Run tests for each rule
-    await Promise.all(
-      csvTestPaths.map(async ({ testFilePath, testFiles }) => {
-        await this.runTestsForRule(ruleDir, testFilePath, testFiles);
-      }),
-    );
+    for (const { testFilePath, testFiles } of csvTestPaths) {
+      await this.runTestsForRule(ruleDir, testFilePath, testFiles);
+    }
     this.showFinalTestResults();
     process.exit(0);
   }

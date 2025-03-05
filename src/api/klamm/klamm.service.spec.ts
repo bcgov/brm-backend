@@ -154,7 +154,7 @@ describe('KlammService', () => {
 
     const result = await service['_getInputOutputFieldsData'](mockRule);
 
-    expect(ruleMappingService.inputOutputSchemaFile).toHaveBeenCalledWith(mockRule.filepath);
+    expect(ruleMappingService.inputOutputSchemaFile).toHaveBeenCalledWith(mockRule.filepath, 'prod');
     expect(service['_getFieldsFromIds']).toHaveBeenCalledWith([], []);
     expect(result).toEqual({ inputs: [], outputs: [] });
   });

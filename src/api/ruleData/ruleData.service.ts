@@ -293,12 +293,17 @@ export class RuleDataService {
    */
   async getContentForRule(
     ruleFilepath: string,
+    ruleDir: string = '',
     version: keyof typeof RULE_VERSION = RULE_VERSION.inProduction,
   ): Promise<Buffer> {
     if (version === RULE_VERSION.draft) {
-      const { content } = await this.getRuleDataWithDraftByFilepath(ruleFilepath);
-      const jsonString = JSON.stringify(content);
-      return Buffer.from(jsonString, 'utf-8');
+      try {
+        const { content } = await this.getRuleDataWithDraftByFilepath(ruleFilepath);
+        const jsonString = JSON.stringify(content);
+        return Buffer.from(jsonString, 'utf-8');
+      } catch (error) {
+        return await this.documentsService.getFileContent(`${ruleDir}/${ruleFilepath}`); // Return from file if no draft
+      }
     }
     if (version === RULE_VERSION.inReview) {
       const file = await this.getRuleFileFromReview(ruleFilepath);
@@ -307,7 +312,7 @@ export class RuleDataService {
       }
       return Buffer.from(file.content, 'base64');
     }
-    return await this.documentsService.getFileContent(ruleFilepath);
+    return await this.documentsService.getFileContent(`${ruleDir}/${ruleFilepath}`);
   }
 
   /**
@@ -320,7 +325,7 @@ export class RuleDataService {
   async getContentForRuleFromFilepath(rulePath: string, ruleDir: string = ''): Promise<Buffer> {
     try {
       const [filepath, version] = rulePath.split('?version='); // Rules can specify draft or inReview with a query param
-      return this.getContentForRule(`${ruleDir}/${filepath}`, version as keyof typeof RULE_VERSION);
+      return this.getContentForRule(filepath, ruleDir, version as keyof typeof RULE_VERSION);
     } catch (error) {
       throw new Error(`Failed to get rule content: ${error.message}`);
     }

@@ -111,9 +111,9 @@ export class ScenarioDataService {
    * Maps inputs and outputs from decision traces to structured results.
    */
   async runDecisionsForScenarios(
-    ruleDir: string,
     filepath: string,
     ruleContent?: RuleContent,
+    ruleDir: string = 'prod',
     newScenarios?: ScenarioData[],
   ): Promise<{ [scenarioId: string]: any }> {
     const scenarios = newScenarios || (await this.getScenariosByFilename(filepath));
@@ -172,15 +172,15 @@ export class ScenarioDataService {
    * Constructs CSV headers and rows based on input and output keys.
    */
   async getCSVForRuleRun(
-    ruleDir: string,
     filepath: string,
     ruleContent: RuleContent,
+    ruleDir: string = 'prod',
     newScenarios?: ScenarioData[],
   ): Promise<{ allTestsPassed: boolean; csvContent: string }> {
     const ruleRunResults: RuleRunResults = await this.runDecisionsForScenarios(
-      ruleDir,
       filepath,
       ruleContent,
+      ruleDir,
       newScenarios,
     );
 
@@ -624,6 +624,7 @@ export class ScenarioDataService {
           {
             trace: true,
           },
+          ruleDir,
         );
         const resultMatches =
           Object.keys(formattedExpectedResultsObject).length > 0

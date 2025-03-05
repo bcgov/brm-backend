@@ -10,6 +10,7 @@ import { VariableClass, CreateScenarioDto } from './dto/create-scenario.dto';
 describe('ScenarioDataController', () => {
   let controller: ScenarioDataController;
   let service: ScenarioDataService;
+  const ruleDir = 'prod';
 
   const testObjectId = new Types.ObjectId();
 
@@ -226,7 +227,7 @@ describe('ScenarioDataController', () => {
         setHeader: jest.fn(),
       };
 
-      await controller.getCSVForRuleRun(filepath, ruleContent, mockResponse as any);
+      await controller.getCSVForRuleRun(filepath, ruleContent, ruleDir, mockResponse as any);
 
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.OK);
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv; charset=utf-8');
@@ -248,11 +249,11 @@ describe('ScenarioDataController', () => {
       };
 
       await expect(async () => {
-        await controller.getCSVForRuleRun(filepath, ruleContent, mockResponse as any);
+        await controller.getCSVForRuleRun(filepath, ruleContent, ruleDir, mockResponse as any);
       }).rejects.toThrow(Error);
 
       try {
-        await controller.getCSVForRuleRun(filepath, ruleContent, mockResponse as any);
+        await controller.getCSVForRuleRun(filepath, ruleContent, ruleDir, mockResponse as any);
       } catch (error) {
         expect(error.message).toBe('Error generating CSV for rule run');
       }
@@ -268,7 +269,7 @@ describe('ScenarioDataController', () => {
       };
 
       await expect(
-        controller.uploadCSVAndProcess(undefined, res as Response, 'test.json', ruleContent),
+        controller.uploadCSVAndProcess(undefined, res as Response, 'test.json', ruleContent, ruleDir),
       ).rejects.toThrow(HttpException);
 
       expect(res.status).not.toHaveBeenCalled();
@@ -314,10 +315,10 @@ describe('ScenarioDataController', () => {
         send: jest.fn(),
       };
 
-      await controller.uploadCSVAndProcess(file, res as Response, 'test.json', ruleContent);
+      await controller.uploadCSVAndProcess(file, res as Response, 'test.json', ruleContent, ruleDir);
 
       expect(service.processProvidedScenarios).toHaveBeenCalledWith('test.json', file);
-      expect(service.getCSVForRuleRun).toHaveBeenCalledWith('test.json', ruleContent, scenarios);
+      expect(service.getCSVForRuleRun).toHaveBeenCalledWith('test.json', ruleContent, ruleDir, scenarios);
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv; charset=utf-8');
       expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename=processed_data.csv');
       expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
@@ -349,9 +350,9 @@ describe('ScenarioDataController', () => {
         send: jest.fn(),
       };
 
-      await expect(controller.uploadCSVAndProcess(file, res as Response, 'test.json', ruleContent)).rejects.toThrow(
-        new HttpException('Error processing CSV file', HttpStatus.INTERNAL_SERVER_ERROR),
-      );
+      await expect(
+        controller.uploadCSVAndProcess(file, res as Response, 'test.json', ruleContent, ruleDir),
+      ).rejects.toThrow(new HttpException('Error processing CSV file', HttpStatus.INTERNAL_SERVER_ERROR));
 
       expect(service.processProvidedScenarios).toHaveBeenCalledWith('test.json', file);
       expect(res.setHeader).not.toHaveBeenCalled();
@@ -378,9 +379,17 @@ describe('ScenarioDataController', () => {
         setHeader: jest.fn(),
       };
 
-      await controller.getCSVTests(filepath, ruleContent, simulationContext, testScenarioCount, mockResponse as any);
+      await controller.getCSVTests(
+        filepath,
+        ruleContent,
+        simulationContext,
+        testScenarioCount,
+        ruleDir,
+        mockResponse as any,
+      );
 
       expect(service.generateTestCSVScenarios).toHaveBeenCalledWith(
+        ruleDir,
         filepath,
         ruleContent,
         simulationContext,
@@ -407,10 +416,18 @@ describe('ScenarioDataController', () => {
       };
 
       await expect(
-        controller.getCSVTests(filepath, ruleContent, simulationContext, testScenarioCount, mockResponse as any),
+        controller.getCSVTests(
+          filepath,
+          ruleContent,
+          simulationContext,
+          testScenarioCount,
+          ruleDir,
+          mockResponse as any,
+        ),
       ).rejects.toThrow(HttpException);
 
       expect(service.generateTestCSVScenarios).toHaveBeenCalledWith(
+        ruleDir,
         filepath,
         ruleContent,
         simulationContext,

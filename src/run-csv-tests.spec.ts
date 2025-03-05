@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getScenariosFromParsedCSV } from './utils/csv';
 import { CsvTestRunner } from './run-csv-tests';
 
 jest.mock('fs', () => ({
@@ -9,6 +10,14 @@ jest.mock('fs', () => ({
     readFile: jest.fn(),
   },
   existsSync: jest.fn(),
+}));
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+  })),
 }));
 jest.mock('util');
 jest.mock('./run-csv-tests', () => ({
@@ -22,6 +31,7 @@ jest.mock('./api/scenarioData/scenarioData.service');
 
 describe('CsvTestRunner', () => {
   const originalArgv = process.argv;
+  const ruleDir = 'prod';
   let runner: CsvTestRunner;
 
   beforeEach(() => {
@@ -93,11 +103,12 @@ describe('CsvTestRunner', () => {
     const testFilePath = 'some/path';
     const testFile = 'test.csv';
     (fs.promises.readFile as jest.Mock).mockResolvedValue('a,b,c\n1,2,3');
+    (getScenariosFromParsedCSV as jest.Mock).mockReturnValue([]);
     (runner.scenarioDataService.getCSVForRuleRun as jest.Mock).mockResolvedValue({
       allTestsPassed: true,
       csvContent: 'a,b,c\n1,2,3',
     });
-    const result = await runner.runScenariosForCSVTestfile(testFilePath, testFile);
+    const result = await runner.runScenariosForCSVTestfile(ruleDir, testFilePath, testFile);
     expect(result).toBe(true);
   });
 
@@ -105,7 +116,7 @@ describe('CsvTestRunner', () => {
     const testFilePath = 'some/path';
     const files = ['test1.csv', 'test2.csv'];
     runner.runScenariosForCSVTestfile = jest.fn();
-    await runner.runTestsForRule(testFilePath, files);
+    await runner.runTestsForRule(ruleDir, testFilePath, files);
     expect(runner.runScenariosForCSVTestfile).toHaveBeenCalledTimes(2);
   });
 
@@ -121,6 +132,11 @@ describe('CsvTestRunner', () => {
   it('should run tests for specified rule path', async () => {
     const rulePathToTest = 'rules/some-rule';
     runner.runTestsForRule = jest.fn();
+    runner.getTestFilesAtRulePath = jest.fn();
+    (runner.getTestFilesAtRulePath as jest.Mock).mockReturnValue({
+      testFilePath: path.relative('brms-rules/tests', rulePathToTest),
+      testFiles: ['file.csv'],
+    });
     await runner.runTestsForSpecifiedRulePath(rulePathToTest);
     expect(runner.runTestsForRule).toHaveBeenCalled();
   });
@@ -137,7 +153,7 @@ describe('CsvTestRunner', () => {
     (fs.statSync as jest.Mock).mockReturnValue({ isDirectory: () => true, isFile: () => true });
     (fs.readdirSync as jest.Mock).mockReturnValueOnce(['file1.json', 'file2.json', 'file3.json']);
     runner.runTestsForRule = jest.fn();
-    await runner.runAllRules();
+    await runner.runAllRules(ruleDir);
     expect(runner.runTestsForRule).toHaveBeenCalledTimes(3);
   });
 });
