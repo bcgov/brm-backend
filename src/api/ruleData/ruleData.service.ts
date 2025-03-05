@@ -14,6 +14,11 @@ const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO || 'https://api.github.c
 
 @Injectable()
 export class RuleDataService {
+  private isValidRuleFilepath(filepath: string): boolean {
+    // Define a set of valid patterns or an allow-list for rule file paths
+    const validPatterns = [/^[a-zA-Z0-9-_\/]+\.json$/];
+    return validPatterns.some((pattern) => pattern.test(filepath));
+  }
   private categories: Array<CategoryObject> = [];
 
   constructor(
@@ -116,7 +121,10 @@ export class RuleDataService {
 
   async getRuleDataWithDraftByFilepath(filepath: string): Promise<RuleDraft> {
     try {
-      const { ruleDraft } = await this.ruleDataModel.findOne({ filepath }).populate('ruleDraft').exec();
+      const { ruleDraft } = await this.ruleDataModel
+        .findOne({ filepath: { $eq: filepath } })
+        .populate('ruleDraft')
+        .exec();
       return ruleDraft as RuleDraft;
     } catch (error) {
       throw new Error(`Error getting draft for ${filepath}: ${error.message}`);
@@ -137,7 +145,7 @@ export class RuleDataService {
 
   async getRuleDataByFilepath(filepath: string): Promise<RuleData> {
     try {
-      const ruleData = await this.ruleDataModel.findOne({ filepath }).exec();
+      const ruleData = await this.ruleDataModel.findOne({ filepath: { $eq: filepath } }).exec();
       return ruleData;
     } catch (error) {
       throw new Error(`Error getting all rule data for ${filepath}: ${error.message}`);
@@ -262,6 +270,10 @@ export class RuleDataService {
    * @throws Will throw an error if the file does not exist or if there is an issue retrieving the content.
    */
   async getRuleFileFromReview(ruleFilepath: string) {
+    // Validate the ruleFilepath
+    if (!this.isValidRuleFilepath(ruleFilepath)) {
+      throw new Error('Invalid rule file path');
+    }
     // Get the review branch name from the ruleData
     const ruleData = await this.getRuleDataByFilepath(ruleFilepath);
     if (!ruleData || !ruleData.reviewBranch) {
