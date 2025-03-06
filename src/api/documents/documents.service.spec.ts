@@ -52,7 +52,7 @@ describe('DocumentsService', () => {
     const result = await service.getFileContent('path/to/existing/file');
 
     expect(result).toBe(mockContent);
-    expect(readFileSafely).toHaveBeenCalledWith(service.rulesDirectory, 'path/to/existing/file');
+    expect(readFileSafely).toHaveBeenCalledWith(service.baseRulesDirectory, 'path/to/existing/file');
   });
 
   it('should throw a 500 error if reading the file fails', async () => {

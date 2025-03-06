@@ -17,6 +17,12 @@ export class EvaluateDecisionDto {
   })
   @IsBoolean()
   trace: boolean;
+
+  @ApiProperty({
+    example: 'prod',
+    description: 'The directory with rules to evaluate.',
+  })
+  ruleDir: string;
 }
 
 @ApiSchema({ description: 'DTO for evaluating a decision with rule content' })

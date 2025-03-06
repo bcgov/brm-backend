@@ -30,7 +30,7 @@ class MockRuleDataModel {
   static exec = jest.fn().mockResolvedValue([mockRuleData]);
 }
 
-export const mockServiceProviders = [
+export const mockRuleDataServiceProviders = [
   RuleDataService,
   {
     provide: getModelToken(RuleDraft.name),
@@ -55,7 +55,7 @@ describe('RuleDataService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: mockServiceProviders,
+      providers: mockRuleDataServiceProviders,
     }).compile();
 
     service = module.get<RuleDataService>(RuleDataService);

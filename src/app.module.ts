@@ -19,7 +19,7 @@ import { ScenarioDataService } from './api/scenarioData/scenarioData.service';
       isGlobal: true, // Make the ConfigModule globally available
       load: [
         () => ({
-          RULES_DIRECTORY: process.env.RULES_DIRECTORY || 'brms-rules/rules',
+          RULES_DIRECTORY: process.env.RULES_DIRECTORY || 'rules',
         }),
       ],
     }),

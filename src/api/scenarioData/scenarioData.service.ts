@@ -113,6 +113,7 @@ export class ScenarioDataService {
   async runDecisionsForScenarios(
     filepath: string,
     ruleContent?: RuleContent,
+    ruleDir: string = 'prod',
     newScenarios?: ScenarioData[],
   ): Promise<{ [scenarioId: string]: any }> {
     const scenarios = newScenarios || (await this.getScenariosByFilename(filepath));
@@ -120,7 +121,7 @@ export class ScenarioDataService {
       const fileContent = await this.documentsService.getFileContent(filepath);
       ruleContent = await JSON.parse(fileContent.toString());
     }
-    const ruleSchema: RuleSchema = await this.ruleMappingService.inputOutputSchema(ruleContent);
+    const ruleSchema: RuleSchema = await this.ruleMappingService.inputOutputSchema(ruleDir, ruleContent);
     const results: { [scenarioId: string]: any } = {};
     for (const scenario of scenarios as ScenarioDataDocument[]) {
       const formattedVariablesObject = reduceToCleanObj(scenario?.variables, 'name', 'value');
@@ -173,9 +174,15 @@ export class ScenarioDataService {
   async getCSVForRuleRun(
     filepath: string,
     ruleContent: RuleContent,
+    ruleDir: string = 'prod',
     newScenarios?: ScenarioData[],
   ): Promise<{ allTestsPassed: boolean; csvContent: string }> {
-    const ruleRunResults: RuleRunResults = await this.runDecisionsForScenarios(filepath, ruleContent, newScenarios);
+    const ruleRunResults: RuleRunResults = await this.runDecisionsForScenarios(
+      filepath,
+      ruleContent,
+      ruleDir,
+      newScenarios,
+    );
 
     const keys = {
       inputs: extractUniqueKeys(ruleRunResults, 'inputs'),
@@ -586,6 +593,7 @@ export class ScenarioDataService {
   }
 
   async generateTestScenarios(
+    ruleDir: string,
     filepath: string,
     ruleContent?: RuleContent,
     simulationContext?: RuleRunResults,
@@ -596,7 +604,7 @@ export class ScenarioDataService {
       const fileContent = await this.documentsService.getFileContent(filepath);
       ruleContent = await JSON.parse(fileContent.toString());
     }
-    const ruleSchema: RuleSchema = await this.ruleMappingService.inputOutputSchema(ruleContent);
+    const ruleSchema: RuleSchema = await this.ruleMappingService.inputOutputSchema(ruleDir, ruleContent);
     const combinations = this.generateCombinations(
       ruleSchema,
       simulationContext,
@@ -616,6 +624,7 @@ export class ScenarioDataService {
           {
             trace: true,
           },
+          ruleDir,
         );
         const resultMatches =
           Object.keys(formattedExpectedResultsObject).length > 0
@@ -658,6 +667,7 @@ export class ScenarioDataService {
   }
 
   async generateTestCSVScenarios(
+    ruleDir: string,
     filepath: string,
     ruleContent: RuleContent,
     simulationContext: RuleRunResults,
@@ -665,6 +675,7 @@ export class ScenarioDataService {
   ) {
     try {
       const ruleRunResults: RuleRunResults = await this.generateTestScenarios(
+        ruleDir,
         filepath,
         ruleContent,
         simulationContext,

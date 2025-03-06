@@ -21,10 +21,14 @@ To set up MongoDB and populate it with initial data, follow these steps:
 
 ### Including Rules from the Rules Repository
 
-To get access to rules locally on your machine simply clone the repo at https://github.com/bcgov/brms-rules into your project. This project is set to grab rules from `brms-rules/rules`, which is the default location of rules if that project is cloned into this one.
+To get access to rules locally on your machine simply clone the repo at https://github.com/bcgov/brms-rules and ensure the rules are placed at the brm-backend/rules/prod location (for main branch/production rules) or brm-backend/rules/dev location (for dev branch/dev rules).
 
 ```bash
 git clone https://github.com/bcgov/brms-rules.git
+```
+
+```bash
+cp -r brms-rules/rules/* brm-backend/rules/prod
 ```
 
 ### Setting Environment Variables

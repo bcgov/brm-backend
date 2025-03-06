@@ -187,6 +187,7 @@ export class ScenarioDataController {
       properties: {
         filepath: { type: 'string', description: 'Path to the rule file', example: ruleExample.filepath },
         ruleContent: { type: 'object', description: 'Rule file body', example: ruleContentExample },
+        ruleDir: { type: 'string', example: 'prod' },
       },
     },
   })
@@ -197,10 +198,15 @@ export class ScenarioDataController {
   async getCSVForRuleRun(
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: RuleContent,
+    @Body('ruleDir') ruleDir: string,
     @Res() res: Response,
   ) {
     try {
-      const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(filepath, ruleContent);
+      const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
+        filepath,
+        ruleContent,
+        ruleDir,
+      );
       // Add header that notes if all tests passed or not
       res.setHeader('X-All-Tests-Passed', allTestsPassed.toString());
       this.sendCSV(res, csvContent, filepath);
@@ -216,6 +222,7 @@ export class ScenarioDataController {
       properties: {
         filepath: { type: 'string', example: ruleExample.filepath },
         ruleContent: { type: 'object', example: ruleContentExample },
+        ruleDir: { type: 'string', example: 'prod' },
       },
     },
   })
@@ -231,9 +238,10 @@ export class ScenarioDataController {
   async runDecisionsForScenarios(
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: RuleContent,
+    @Body('ruleDir') ruleDir: string,
   ): Promise<{ [scenarioId: string]: any }> {
     try {
-      return await this.scenarioDataService.runDecisionsForScenarios(filepath, ruleContent);
+      return await this.scenarioDataService.runDecisionsForScenarios(filepath, ruleContent, ruleDir);
     } catch (error) {
       throw new HttpException('Error running scenario decisions', HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -257,6 +265,7 @@ export class ScenarioDataController {
           description: 'Rule content to be executed (as JSON string)',
           example: ruleContentExample,
         },
+        ruleDir: { type: 'string', example: 'prod' },
       },
       required: ['file', 'filepath', 'ruleContent'],
     },
@@ -280,6 +289,7 @@ export class ScenarioDataController {
     @Res() res: Response,
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: RuleContent,
+    @Body('ruleDir') ruleDir: string,
   ) {
     if (!file) {
       throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
@@ -290,6 +300,7 @@ export class ScenarioDataController {
       const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
         filepath,
         typeof ruleContent === 'string' ? JSON.parse(ruleContent) : ruleContent,
+        ruleDir,
         scenarios,
       );
       // Add header that notes if all tests passed or not
@@ -309,6 +320,7 @@ export class ScenarioDataController {
         ruleContent: { type: 'object', example: ruleContentExample },
         simulationContext: { type: 'object', example: ruleInputs },
         testScenarioCount: { type: 'number', example: 10 },
+        ruleDir: { type: 'string', example: 'prod' },
       },
     },
   })
@@ -329,10 +341,12 @@ export class ScenarioDataController {
     @Body('ruleContent') ruleContent: RuleContent,
     @Body('simulationContext') simulationContext: RuleRunResults,
     @Body('testScenarioCount') testScenarioCount: number,
+    @Body('ruleDir') ruleDir: string,
     @Res() res: Response,
   ) {
     try {
       const fileContent = await this.scenarioDataService.generateTestCSVScenarios(
+        ruleDir,
         filepath,
         ruleContent,
         simulationContext,
