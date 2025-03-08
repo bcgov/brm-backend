@@ -15,6 +15,10 @@ const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO || 'https://api.github.c
 @Injectable()
 export class RuleDataService {
   private isValidRuleFilepath(filepath: string): boolean {
+    // Ensure the ruleFilepath does not contain any path traversal sequences
+    if (filepath.includes('..')) {
+      return false;
+    }
     // Define a set of valid patterns or an allow-list for rule file paths
     const validPatterns = [/^[a-zA-Z0-9-_\/]+\.json$/];
     return validPatterns.some((pattern) => pattern.test(filepath));
@@ -281,9 +285,15 @@ export class RuleDataService {
     }
     const { reviewBranch } = ruleData;
     try {
+      // Add auth header if token is available in order to avoid rate limiting
+      const headers: Record<string, string> = {};
+      if (process.env.GITHUB_TOKEN) {
+        headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+      }
       // Get the file from the review branch
-      const contentsUrl = `${GITHUB_RULES_REPO}/contents/rules/${ruleFilepath}`;
+      const contentsUrl = `${GITHUB_RULES_REPO}/contents/rules/${encodeURIComponent(ruleFilepath)}`;
       const getFileResponse = await axios.get(contentsUrl, {
+        headers,
         params: { ref: reviewBranch }, // Ensure we're checking the correct branch
       });
       return getFileResponse.data;
