@@ -1,13 +1,14 @@
-import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { ZenEngine, ZenDecision, ZenEvaluateOptions } from '@gorules/zen-engine';
 import { DecisionsService } from './decisions.service';
 import { ValidationService } from './validations/validations.service';
-import { readFileSafely, FileNotFoundError } from '../../utils/readFile';
+import { FileNotFoundError } from '../../utils/readFile';
 import { RuleContent } from '../ruleMapping/ruleMapping.interface';
 import { ValidationError } from './validations/validation.error';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { mockRuleDataServiceProviders } from '../ruleData/ruleData.service.spec';
+import { RuleDataService } from '../ruleData/ruleData.service';
 
 jest.mock('../../utils/readFile', () => ({
   readFileSafely: jest.fn(),
@@ -16,9 +17,11 @@ jest.mock('../../utils/readFile', () => ({
 
 describe('DecisionsService', () => {
   let service: DecisionsService;
+  let ruleDataService: RuleDataService;
   let validationService: ValidationService;
   let mockEngine: Partial<ZenEngine>;
   let mockDecision: Partial<ZenDecision>;
+  const ruleDir = 'prod';
 
   beforeEach(async () => {
     mockDecision = {
@@ -30,7 +33,7 @@ describe('DecisionsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        ConfigService,
+        ...mockRuleDataServiceProviders,
         DecisionsService,
         ValidationService,
         { provide: ZenEngine, useValue: mockEngine },
@@ -39,9 +42,11 @@ describe('DecisionsService', () => {
     }).compile();
 
     service = module.get<DecisionsService>(DecisionsService);
+    ruleDataService = module.get<RuleDataService>(RuleDataService);
     validationService = module.get<ValidationService>(ValidationService);
     service.engine = mockEngine as ZenEngine;
     jest.spyOn(validationService, 'validateInputs').mockImplementation(() => {});
+    jest.spyOn(ruleDataService, 'getContentForRuleFromFilepath').mockResolvedValue(Buffer.from(''));
   });
 
   describe('runDecision', () => {
@@ -71,13 +76,15 @@ describe('DecisionsService', () => {
       const options: ZenEvaluateOptions = { trace: false };
       const content = { rule: 'rule' };
 
-      (readFileSafely as jest.Mock).mockResolvedValue(Buffer.from(JSON.stringify(content)));
+      (ruleDataService.getContentForRuleFromFilepath as jest.Mock).mockResolvedValue(
+        Buffer.from(JSON.stringify(content)),
+      );
 
       // Call runDecision with null/undefined ruleContent
       await service.runDecision(null, ruleFileName, context, options);
 
       // Verify that readFileSafely was called, indicating fallback to runDecisionByFile
-      expect(readFileSafely).toHaveBeenCalledWith(service.rulesDirectory, ruleFileName);
+      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName, ruleDir);
       expect(mockEngine.createDecision).toHaveBeenCalledWith(content);
       expect(mockDecision.evaluate).toHaveBeenCalledWith(context, options);
     });
@@ -133,9 +140,11 @@ describe('DecisionsService', () => {
       const context = {};
       const options: ZenEvaluateOptions = { trace: false };
       const content = { rule: 'rule' };
-      (readFileSafely as jest.Mock).mockResolvedValue(Buffer.from(JSON.stringify(content)));
+      (ruleDataService.getContentForRuleFromFilepath as jest.Mock).mockResolvedValue(
+        Buffer.from(JSON.stringify(content)),
+      );
       await service.runDecisionByFile(ruleFileName, context, options);
-      expect(readFileSafely).toHaveBeenCalledWith(service.rulesDirectory, ruleFileName);
+      expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(ruleFileName, ruleDir);
       expect(mockEngine.createDecision).toHaveBeenCalledWith(content);
       expect(mockDecision.evaluate).toHaveBeenCalledWith(context, options);
     });
@@ -144,7 +153,7 @@ describe('DecisionsService', () => {
       const ruleFileName = 'rule';
       const context = {};
       const options: ZenEvaluateOptions = { trace: false };
-      (readFileSafely as jest.Mock).mockRejectedValue(new Error('Error'));
+      (ruleDataService.getContentForRuleFromFilepath as jest.Mock).mockRejectedValue(new Error('Error'));
       await expect(service.runDecisionByFile(ruleFileName, context, options)).rejects.toThrow(
         'Failed to run decision: Error',
       );
@@ -155,7 +164,9 @@ describe('DecisionsService', () => {
     const context = {};
     const options: ZenEvaluateOptions = { trace: false };
 
-    (readFileSafely as jest.Mock).mockRejectedValue(new FileNotFoundError('File not found'));
+    (ruleDataService.getContentForRuleFromFilepath as jest.Mock).mockRejectedValue(
+      new FileNotFoundError('File not found'),
+    );
 
     await expect(service.runDecisionByFile(ruleFileName, context, options)).rejects.toThrow(
       new HttpException('Rule not found', HttpStatus.NOT_FOUND),

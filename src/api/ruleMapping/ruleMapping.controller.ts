@@ -16,6 +16,7 @@ export class RuleMappingController {
   @ApiBody({
     schema: {
       example: {
+        ruleDir: 'prod',
         filepath: ruleExample.filepath,
         ruleContent: ruleContentExample,
       },
@@ -32,45 +33,17 @@ export class RuleMappingController {
     },
   })
   async getRuleSchema(
+    @Body('ruleDir') ruleDir: string,
     @Body('filepath') filepath: string,
     @Body('ruleContent') ruleContent: EvaluateRuleMappingDto,
     @Res() res: Response,
   ) {
-    const rulemap = await this.ruleMappingService.inputOutputSchema(ruleContent);
+    const rulemap = await this.ruleMappingService.inputOutputSchema(ruleDir, ruleContent);
 
     try {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename=${filepath}`);
       res.send(rulemap);
-    } catch (error) {
-      if (error instanceof InvalidRuleContent) {
-        throw new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST);
-      } else {
-        throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-    }
-  }
-
-  // Map a rule to its unique inputs, and all outputs
-  @Post('/evaluate')
-  @ApiOperation({ summary: 'Evaluate rule mapping' })
-  @ApiBody({ type: EvaluateRuleMappingDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Rule mapping evaluated successfully',
-    schema: {
-      example: {
-        result: {
-          inputs: ruleInputMetadata,
-          resultOutputs: ruleOutputMetadata,
-        },
-      },
-    },
-  })
-  async evaluateRuleMap(@Body() ruleContent: EvaluateRuleMappingDto) {
-    try {
-      const result = await this.ruleMappingService.inputOutputSchema(ruleContent);
-      return { result };
     } catch (error) {
       if (error instanceof InvalidRuleContent) {
         throw new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST);
@@ -115,6 +88,7 @@ export class RuleMappingController {
   @ApiBody({
     schema: {
       example: {
+        ruleDir: 'dev',
         ruleContent: ruleContentExample,
       },
     },
@@ -130,10 +104,11 @@ export class RuleMappingController {
     },
   })
   async generateWithoutInputOutputNodes(
+    @Body('ruleDir') ruleDir: string,
     @Body('ruleContent') ruleContent: EvaluateRuleMappingDto,
     @Res() res: Response,
   ) {
-    const rulemap = await this.ruleMappingService.ruleSchema(ruleContent);
+    const rulemap = await this.ruleMappingService.ruleSchema(ruleDir, ruleContent);
 
     try {
       res.setHeader('Content-Type', 'application/json');

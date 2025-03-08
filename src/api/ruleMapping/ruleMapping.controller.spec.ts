@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RuleMappingController } from './ruleMapping.controller';
 import { RuleMappingService, InvalidRuleContent } from './ruleMapping.service';
-import { EvaluateRuleMappingDto, EvaluateRuleRunSchemaDto } from './dto/evaluate-rulemapping.dto';
+import { EvaluateRuleRunSchemaDto } from './dto/evaluate-rulemapping.dto';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { TraceObject } from './ruleMapping.interface';
@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 describe('RuleMappingController', () => {
   let controller: RuleMappingController;
   let service: RuleMappingService;
+  const ruleDir = 'prod';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -49,9 +50,9 @@ describe('RuleMappingController', () => {
         send: jest.fn(),
       } as unknown as Response;
 
-      await controller.getRuleSchema(ruleFileName, ruleContent, mockResponse);
+      await controller.getRuleSchema(ruleDir, ruleFileName, ruleContent, mockResponse);
 
-      expect(service.inputOutputSchema).toHaveBeenCalledWith(ruleContent);
+      expect(service.inputOutputSchema).toHaveBeenCalledWith(ruleDir, ruleContent);
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Disposition',
@@ -70,9 +71,9 @@ describe('RuleMappingController', () => {
         send: jest.fn(),
       } as unknown as Response;
 
-      await controller.getRuleSchema(ruleFileName, ruleContent, mockResponse);
+      await controller.getRuleSchema(ruleDir, ruleFileName, ruleContent, mockResponse);
 
-      expect(service.inputOutputSchema).toHaveBeenCalledWith(ruleContent);
+      expect(service.inputOutputSchema).toHaveBeenCalledWith(ruleDir, ruleContent);
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Disposition',
@@ -90,7 +91,7 @@ describe('RuleMappingController', () => {
         throw new InvalidRuleContent('Invalid rule content');
       });
 
-      await expect(controller.getRuleSchema(ruleFileName, ruleContent, mockResponse)).rejects.toThrow(
+      await expect(controller.getRuleSchema(ruleDir, ruleFileName, ruleContent, mockResponse)).rejects.toThrow(
         new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST),
       );
     });
@@ -99,7 +100,7 @@ describe('RuleMappingController', () => {
       const ruleContent = { nodes: [], edges: [] };
       const mockResponse = { setHeader: jest.fn(), send: jest.fn() } as unknown as Response;
 
-      await controller.getRuleSchema(ruleFileName, ruleContent, mockResponse);
+      await controller.getRuleSchema(ruleDir, ruleFileName, ruleContent, mockResponse);
 
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
@@ -116,48 +117,7 @@ describe('RuleMappingController', () => {
         throw new InvalidRuleContent('Invalid rule content');
       });
 
-      await expect(controller.getRuleSchema(ruleFileName, ruleContent, mockResponse)).rejects.toThrow(
-        new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST),
-      );
-    });
-  });
-
-  describe('evaluateRuleMap', () => {
-    it('should return the evaluated rule map', async () => {
-      const nodes = [{ id: '1', type: 'someType', content: { inputs: [], outputs: [] } }];
-      const edges = [{ id: '2', type: 'someType', targetId: '1', sourceId: '1' }];
-      const result = { inputs: [], outputs: [], resultOutputs: [] };
-      jest.spyOn(service, 'inputOutputSchema').mockResolvedValue(result);
-
-      const dto: EvaluateRuleMappingDto = { nodes, edges };
-      const response = await controller.evaluateRuleMap(dto);
-
-      expect(service.inputOutputSchema).toHaveBeenCalledWith({ nodes, edges });
-      expect(response).toEqual({ result });
-    });
-
-    it('should handle errors properly', async () => {
-      const nodes = [{ id: '1', type: 'someType', content: { inputs: [], outputs: [] } }];
-      const edges = [{ id: '2', type: 'someType', targetId: '1', sourceId: '1' }];
-      const error = new Error('Unexpected error');
-      jest.spyOn(service, 'inputOutputSchema').mockImplementation(() => {
-        throw error;
-      });
-
-      const dto: EvaluateRuleMappingDto = { nodes, edges };
-
-      await expect(controller.evaluateRuleMap(dto)).rejects.toThrow(
-        new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR),
-      );
-    });
-    it('should handle InvalidRuleContent errors properly', async () => {
-      const dto: EvaluateRuleMappingDto = { nodes: [{ id: '1', type: 'someType', content: {} }], edges: [] };
-
-      jest.spyOn(service, 'inputOutputSchema').mockImplementation(() => {
-        throw new InvalidRuleContent('Error');
-      });
-
-      await expect(controller.evaluateRuleMap(dto)).rejects.toThrow(
+      await expect(controller.getRuleSchema(ruleDir, ruleFileName, ruleContent, mockResponse)).rejects.toThrow(
         new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST),
       );
     });
@@ -287,9 +247,9 @@ describe('RuleMappingController', () => {
         send: jest.fn(),
       } as unknown as Response;
 
-      await controller.generateWithoutInputOutputNodes(ruleContent, mockResponse);
+      await controller.generateWithoutInputOutputNodes(ruleDir, ruleContent, mockResponse);
 
-      expect(service.ruleSchema).toHaveBeenCalledWith(ruleContent);
+      expect(service.ruleSchema).toHaveBeenCalledWith(ruleDir, ruleContent);
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
       expect(mockResponse.send).toHaveBeenCalledWith(rulemap);
     });
@@ -302,7 +262,7 @@ describe('RuleMappingController', () => {
         throw new InvalidRuleContent('Invalid rule content');
       });
 
-      await expect(controller.generateWithoutInputOutputNodes(ruleContent, mockResponse)).rejects.toThrow(
+      await expect(controller.generateWithoutInputOutputNodes(ruleDir, ruleContent, mockResponse)).rejects.toThrow(
         new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST),
       );
     });
@@ -313,7 +273,7 @@ describe('RuleMappingController', () => {
 
       jest.spyOn(service, 'ruleSchema').mockResolvedValue(ruleSchema);
 
-      await controller.generateWithoutInputOutputNodes(ruleContent, mockResponse);
+      await controller.generateWithoutInputOutputNodes(ruleDir, ruleContent, mockResponse);
 
       expect(mockResponse.send).toHaveBeenCalledWith(ruleSchema);
     });
@@ -325,7 +285,7 @@ describe('RuleMappingController', () => {
         throw new InvalidRuleContent('Invalid rule content');
       });
 
-      await expect(controller.generateWithoutInputOutputNodes(ruleContent, mockResponse)).rejects.toThrow(
+      await expect(controller.generateWithoutInputOutputNodes(ruleDir, ruleContent, mockResponse)).rejects.toThrow(
         new HttpException('Invalid rule content', HttpStatus.BAD_REQUEST),
       );
     });

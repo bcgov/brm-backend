@@ -4,11 +4,11 @@ import { ScenarioDataService } from './scenarioData.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Types, Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
+import { mockRuleDataServiceProviders } from '../ruleData/ruleData.service.spec';
 import { ScenarioData, ScenarioDataDocument } from './scenarioData.schema';
 import { RuleSchema } from './scenarioData.interface';
 import { DecisionsService } from '../decisions/decisions.service';
 import { RuleMappingService } from '../ruleMapping/ruleMapping.service';
-import { DocumentsService } from '../documents/documents.service';
 import { parseCSV, getScenariosFromParsedCSV, complexCartesianProduct } from '../../utils/csv';
 
 jest.mock('../../utils/csv');
@@ -18,6 +18,7 @@ describe('ScenarioDataService', () => {
   let decisionsService: DecisionsService;
   let ruleMappingService: RuleMappingService;
   let model: Model<ScenarioDataDocument>;
+  const ruleDir = 'prod';
 
   const testObjectId = new Types.ObjectId();
 
@@ -56,6 +57,7 @@ describe('ScenarioDataService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...mockRuleDataServiceProviders,
         DecisionsService,
         RuleMappingService,
         ScenarioDataService,
@@ -63,7 +65,6 @@ describe('ScenarioDataService', () => {
           provide: getModelToken(ScenarioData.name),
           useValue: MockScenarioDataModel,
         },
-        DocumentsService,
         {
           provide: ConfigService,
           useValue: {
@@ -1068,7 +1069,7 @@ describe('ScenarioDataService', () => {
         trace: {},
       });
 
-      const result = await service.generateTestScenarios(filepath, ruleContent);
+      const result = await service.generateTestScenarios(ruleDir, filepath, ruleContent);
       expect(Object.keys(result).length).toBeGreaterThan(0);
       Object.values(result).forEach((scenario) => {
         expect(scenario).toHaveProperty('inputs');
@@ -1078,7 +1079,7 @@ describe('ScenarioDataService', () => {
 
     it('should handle errors during scenario generation', async () => {
       jest.spyOn(decisionsService, 'runDecision').mockRejectedValue(new Error('Test error'));
-      const result = await service.generateTestScenarios('test.json', { nodes: [], edges: [] });
+      const result = await service.generateTestScenarios(ruleDir, 'test.json', { nodes: [], edges: [] });
       expect(Object.keys(result).length).toBeGreaterThan(0);
       expect(result.testCase1.error).toBe('Test error');
     });
@@ -1099,7 +1100,12 @@ describe('ScenarioDataService', () => {
         },
       });
 
-      const result = await service.generateTestCSVScenarios('test.json', mockRuleContent, mockSimulationContext);
+      const result = await service.generateTestCSVScenarios(
+        ruleDir,
+        'test.json',
+        mockRuleContent,
+        mockSimulationContext,
+      );
 
       expect(typeof result).toBe('string');
       expect(result).toContain('Scenario');
@@ -1110,7 +1116,7 @@ describe('ScenarioDataService', () => {
       jest.spyOn(service, 'generateTestScenarios').mockRejectedValue(new Error('Test error'));
 
       await expect(
-        service.generateTestCSVScenarios('test.json', mockRuleContent, mockSimulationContext),
+        service.generateTestCSVScenarios(ruleDir, 'test.json', mockRuleContent, mockSimulationContext),
       ).rejects.toThrow('Error in generating test scenarios CSV: Test error');
     });
   });

@@ -27,6 +27,7 @@ import { getScenariosFromParsedCSV } from './utils/csv';
 import { RuleMappingService } from './api/ruleMapping/ruleMapping.service';
 import { DocumentsService } from './api/documents/documents.service';
 import { ScenarioDataService } from './api/scenarioData/scenarioData.service';
+import { RuleDataService } from './api/ruleData/ruleData.service';
 
 interface CSVFilesForRule {
   testFilePath: string;
@@ -42,9 +43,10 @@ class CsvTestRunner {
 
   private configService = new ConfigService({ RULES_DIRECTORY });
   private logger = new Logger();
-  private decisionService = new DecisionsService(this.configService, this.logger);
   private documentsService = new DocumentsService(this.configService);
-  private ruleMappingService = new RuleMappingService(this.documentsService, this.configService);
+  private ruleDataService = new RuleDataService(null, null, this.documentsService, this.logger);
+  private decisionService = new DecisionsService(this.ruleDataService, this.logger);
+  private ruleMappingService = new RuleMappingService(this.ruleDataService);
   public scenarioDataService = new ScenarioDataService(
     this.decisionService,
     this.ruleMappingService,
@@ -125,11 +127,12 @@ class CsvTestRunner {
 
   /**
    * Runs scenarios for a specified CSV test file.
+   * @param ruleDir - The directory where the rule is stored.
    * @param testFilePath - The path of the rule.
    * @param testFile - The CSV test file to run scenarios for.
    * @returns A promise that resolves when the scenarios have been run.
    */
-  public async runScenariosForCSVTestfile(testFilePath: string, testFile: string) {
+  public async runScenariosForCSVTestfile(ruleDir: string, testFilePath: string, testFile: string) {
     this.ruleStats.testCount++;
     const fullTestFilePath = `${CSV_TESTS_DIRECTORY}/${testFilePath}/${testFile}`;
     const testCSVFileContent = await fs.promises.readFile(fullTestFilePath, 'utf8');
@@ -143,6 +146,7 @@ class CsvTestRunner {
     const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
       rulePath,
       null,
+      ruleDir,
       csvScenarios,
     );
     console.info(
@@ -158,16 +162,17 @@ class CsvTestRunner {
 
   /**
    * Runs tests for a specified rule/path.
-   * @param rulePath - The path of the rule.
+   * @param ruleDir - The directory where the rule is stored
+   * @param testFilePath - The path of the rule.
    * @param files - The CSV test files to run.
    * @returns A promise that resolves when the tests have been run.
    */
-  async runTestsForRule(testFilePath: string, files: string[]) {
+  async runTestsForRule(ruleDir: string, testFilePath: string, files: string[]) {
     console.info(chalk.blue(`Running csv tests for rule ${testFilePath}...`));
     this.ruleStats.ruleCount++;
     await Promise.all(
       files.map(async (testFile) => {
-        await this.runScenariosForCSVTestfile(testFilePath, testFile);
+        await this.runScenariosForCSVTestfile(ruleDir, testFilePath, testFile);
       }),
     );
   }
@@ -191,7 +196,7 @@ class CsvTestRunner {
    * Test a rule at a specified path with the CSV test files there
    * @param rulePathToTest - The path of the rule.
    */
-  async runTestsForSpecifiedRulePath(rulePathToTest?: string) {
+  async runTestsForSpecifiedRulePath(ruleDir, rulePathToTest?: string) {
     if (rulePathToTest) {
       if (rulePathToTest.startsWith('rules/')) {
         rulePathToTest = rulePathToTest.slice(6);
@@ -204,7 +209,7 @@ class CsvTestRunner {
     if (!testFiles || testFiles.length === 0) {
       return;
     }
-    await this.runTestsForRule(testFilePath, testFiles);
+    await this.runTestsForRule(ruleDir, testFilePath, testFiles);
   }
 
   /**
@@ -222,12 +227,12 @@ class CsvTestRunner {
   /**
    * Runs all rules by getting all paths that have CSV test files and running tests for each rule.
    */
-  async runAllRules() {
+  async runAllRules(ruleDir: string) {
     // Gets all paths that have CSV test files in them
     const csvTestPaths = this.getTestPathsAndFiles(CSV_TESTS_DIRECTORY);
     // Run tests for each rule
     for (const { testFilePath, testFiles } of csvTestPaths) {
-      await this.runTestsForRule(testFilePath, testFiles);
+      await this.runTestsForRule(ruleDir, testFilePath, testFiles);
     }
     this.showFinalTestResults();
     process.exit(0);
@@ -244,7 +249,7 @@ class CsvTestRunner {
     if (rulePathsToTest) {
       await this.runTestsForSpecifiedRulePaths(rulePathsToTest);
     } else {
-      await this.runAllRules();
+      await this.runAllRules('');
     }
   }
 }

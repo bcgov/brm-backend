@@ -174,7 +174,8 @@ export class KlammService {
 
   async _getInputOutputFieldsData(rule: RuleData): Promise<{ inputs: KlammField[]; outputs: KlammField[] }> {
     try {
-      const { inputs, resultOutputs } = await this.ruleMappingService.inputOutputSchemaFile(rule.filepath);
+      const ruleDir = 'prod'; // Currently sycning with prod rules
+      const { inputs, resultOutputs } = await this.ruleMappingService.inputOutputSchemaFile(rule.filepath, ruleDir);
       const inputIds = inputs.map(({ id }) => Number(id));
       const outputIds = resultOutputs.map(({ id }) => Number(id));
       const klammFields: KlammField[] = await this._getAllKlammFields();
