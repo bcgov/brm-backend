@@ -27,11 +27,18 @@ export class RuleMappingService {
       }
       if (node.type === 'expressionNode' && node.content?.expressions) {
         const simpleExpressionRegex = /^[a-zA-Z0-9]+$/;
+        const parameterMatcherRegex = new RegExp(`[a-zA-Z_][a-zA-Z0-9_]*`);
         return node.content.expressions.map((expr: { key: any; value: any }) => {
           const isSimpleValue = simpleExpressionRegex.test(expr.value);
           return {
             key: isSimpleValue ? (fieldKey === 'inputs' ? expr.key : expr.value) : expr.key,
-            field: isSimpleValue ? (fieldKey === 'inputs' ? expr.value : expr.key) : expr.key,
+            field: isSimpleValue
+              ? fieldKey === 'inputs'
+                ? expr.value
+                : expr.key
+              : fieldKey === 'inputs'
+                ? parameterMatcherRegex.exec(expr.value)?.[0]
+                : expr.key,
             exception: isSimpleValue ? null : expr.value,
           };
         });

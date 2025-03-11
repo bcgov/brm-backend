@@ -165,8 +165,8 @@ describe('RuleMappingService', () => {
       const result = await service.extractFields(ruleDir, nodes, 'inputs');
       expect(result).toEqual({
         inputs: [
-          { key: 'expr1', field: 'expr1', exception: 'field3 > 5' },
-          { key: 'expr2', field: 'expr2', exception: 'complexExpr + 2' },
+          { key: 'expr1', field: 'field3', exception: 'field3 > 5' },
+          { key: 'expr2', field: 'complexExpr', exception: 'complexExpr + 2' },
         ],
       });
     });
