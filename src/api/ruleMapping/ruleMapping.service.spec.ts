@@ -143,7 +143,7 @@ describe('RuleMappingService', () => {
       expect(result).toEqual({
         inputs: [
           { key: 'expr1', field: 'field3', exception: null },
-          { key: 'expr2', field: '123', exception: null },
+          { key: 'expr2', field: 'expr2', exception: '123' },
         ],
       });
     });

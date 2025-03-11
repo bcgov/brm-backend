@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Node, Edge, TraceObject, Field, RuleContent } from './ruleMapping.interface';
 import { RuleDataService } from '../ruleData/ruleData.service';
 import { RuleSchema, RuleField } from '../scenarioData/scenarioData.interface';
+import { extractExpressionVariables } from '../../utils/helpers';
 export class InvalidRuleContent extends Error {
   constructor(message: string) {
     super(message);
@@ -26,21 +27,46 @@ export class RuleMappingService {
         return fieldKey === 'inputs' ? inputs : resultOutputs;
       }
       if (node.type === 'expressionNode' && node.content?.expressions) {
-        const simpleExpressionRegex = /^[a-zA-Z0-9]+$/;
-        const parameterMatcherRegex = new RegExp(`[a-zA-Z_][a-zA-Z0-9_]*`);
-        return node.content.expressions.map((expr: { key: any; value: any }) => {
+        const simpleExpressionRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+        return node.content.expressions.flatMap((expr: { key: any; value: any }) => {
           const isSimpleValue = simpleExpressionRegex.test(expr.value);
-          return {
-            key: isSimpleValue ? (fieldKey === 'inputs' ? expr.key : expr.value) : expr.key,
-            field: isSimpleValue
-              ? fieldKey === 'inputs'
-                ? expr.value
-                : expr.key
-              : fieldKey === 'inputs'
-                ? parameterMatcherRegex.exec(expr.value)?.[0]
-                : expr.key,
-            exception: isSimpleValue ? null : expr.value,
-          };
+          if (fieldKey === 'inputs') {
+            if (isSimpleValue) {
+              // Simple variable reference
+              return [
+                {
+                  key: expr.key,
+                  field: expr.value,
+                  exception: null,
+                },
+              ];
+            } else {
+              // Explicitly extract variables
+              const variables = extractExpressionVariables(expr.value);
+              if (variables.length === 0) {
+                return [
+                  {
+                    key: expr.key,
+                    field: expr.key,
+                    exception: expr.value,
+                  },
+                ];
+              }
+              return variables.map((variable) => ({
+                key: expr.key,
+                field: variable,
+                exception: expr.value,
+              }));
+            }
+          } else {
+            return [
+              {
+                key: isSimpleValue ? expr.value : expr.key,
+                field: isSimpleValue ? expr.key : expr.key,
+                exception: isSimpleValue ? null : expr.value,
+              },
+            ];
+          }
         });
       } else {
         return (node.content?.[fieldKey] || []).map((field: Field) => ({
