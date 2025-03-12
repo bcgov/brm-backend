@@ -260,7 +260,7 @@ export const extractExpressionVariables = (expression: string): string[] => {
 
   const extractSpecialPatternVariables = (expr: string): string[] => {
     const specialVars: string[] = [];
-    const funcCallRegex = /([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
+    const funcCallRegex = /([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*\()/g;
     let match: RegExpExecArray | null;
     while ((match = funcCallRegex.exec(expr)) !== null) {
       const name = match[1];
@@ -268,7 +268,7 @@ export const extractExpressionVariables = (expression: string): string[] => {
         specialVars.push(name);
       }
     }
-    const propAccessRegex = /([a-zA-Z_][a-zA-Z0-9_]*)\.[a-zA-Z_][a-zA-Z0-9_]*/g;
+    const propAccessRegex = /([a-zA-Z_][a-zA-Z0-9_]*)(?=\.[a-zA-Z_][a-zA-Z0-9_]*)/g;
     while ((match = propAccessRegex.exec(expr)) !== null) {
       if (match[1] !== '#' && !keywords.has(match[1])) {
         specialVars.push(match[1]);
@@ -281,11 +281,11 @@ export const extractExpressionVariables = (expression: string): string[] => {
   // example: { key: value }
   const findPropertyAssignments = (expr: string): Set<string> => {
     const properties = new Set<string>();
-    const objectRegex = /{([^{}]*?)}/g;
+    const objectRegex = /{([^{}]*)}/g;
     let objMatch: RegExpExecArray | null;
     while ((objMatch = objectRegex.exec(expr)) !== null) {
       const inner = objMatch[1];
-      const propRegex = /([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g;
+      const propRegex = /([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*:)/g;
       let propMatch: RegExpExecArray | null;
       while ((propMatch = propRegex.exec(inner)) !== null) {
         properties.add(propMatch[1]);
