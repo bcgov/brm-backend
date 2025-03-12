@@ -130,7 +130,7 @@ export const deriveNameFromFilepath = (filepath: string): string => {
 };
 
 /**
- * Extract variables from template literals like `this is a reason: ${reason}`
+ * Extract variables from template literals like `this is a variable name: ${variableName}`
  * @param expression Template string to extract variables from
  * @returns Array of variable names found in template literals
  */
@@ -277,7 +277,8 @@ export const extractExpressionVariables = (expression: string): string[] => {
     return specialVars;
   };
 
-  // Find property names used in object literals like { key: value }
+  // Find property names used in object literals
+  // example: { key: value }
   const findPropertyAssignments = (expr: string): Set<string> => {
     const properties = new Set<string>();
     const objectRegex = /{([^{}]*?)}/g;
@@ -295,7 +296,8 @@ export const extractExpressionVariables = (expression: string): string[] => {
 
   const propertyAssignments = findPropertyAssignments(expression);
 
-  // Identify ranges for all string literals (backticks, single and double quotes)
+  // Identify ranges for all string literals
+  // includes: (backticks, single and double quotes)
   const stringRanges: [number, number][] = [];
   let inString: boolean = false;
   let stringStart = 0;
