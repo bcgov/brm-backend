@@ -146,6 +146,11 @@ export const extractTemplateVariables = (expression: string): string[] => {
   return matches;
 };
 
+export const limitInputLength = (input: string, maxLength: number = 1000): string => {
+  if (!input) return '';
+  return input.length <= maxLength ? input : input.substring(0, maxLength);
+};
+
 /**
  * Extract variables from expressions including ternary operators and other patterns
  * @param expression code string to extract variables from
@@ -153,6 +158,9 @@ export const extractTemplateVariables = (expression: string): string[] => {
  */
 export const extractExpressionVariables = (expression: string): string[] => {
   if (!expression) return [];
+
+  // Limit the expression length to avoid performance issues with regex
+  const limitedExpression = limitInputLength(expression);
 
   const variableRegex = /[a-zA-Z_][a-zA-Z0-9_]*/g;
   const keywords = new Set([
@@ -294,7 +302,7 @@ export const extractExpressionVariables = (expression: string): string[] => {
     return properties;
   };
 
-  const propertyAssignments = findPropertyAssignments(expression);
+  const propertyAssignments = findPropertyAssignments(limitedExpression);
 
   // Identify ranges for all string literals
   // includes: (backticks, single and double quotes)
@@ -302,9 +310,9 @@ export const extractExpressionVariables = (expression: string): string[] => {
   let inString: boolean = false;
   let stringStart = 0;
   let currentQuote = '';
-  for (let i = 0; i < expression.length; i++) {
-    const char = expression[i];
-    const prevChar = i > 0 ? expression[i - 1] : '';
+  for (let i = 0; i < limitedExpression.length; i++) {
+    const char = limitedExpression[i];
+    const prevChar = i > 0 ? limitedExpression[i - 1] : '';
     if (!inString && (char === '`' || char === "'" || char === '"')) {
       inString = true;
       currentQuote = char;
@@ -322,7 +330,7 @@ export const extractExpressionVariables = (expression: string): string[] => {
 
   const matches: string[] = [];
   let varMatch: RegExpExecArray | null;
-  while ((varMatch = variableRegex.exec(expression)) !== null) {
+  while ((varMatch = variableRegex.exec(limitedExpression)) !== null) {
     const name = varMatch[0];
     const pos = varMatch.index;
     const isHashProp = pos > 1 && expression[pos - 2] === '#' && expression[pos - 1] === '.';
@@ -338,5 +346,5 @@ export const extractExpressionVariables = (expression: string): string[] => {
   }
 
   // Combine and return unique variables
-  return Array.from(new Set([...matches, ...extractSpecialPatternVariables(expression), ...templateVars]));
+  return Array.from(new Set([...matches, ...extractSpecialPatternVariables(limitedExpression), ...templateVars]));
 };
