@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Node, Edge, TraceObject, Field, RuleContent } from './ruleMapping.interface';
 import { RuleDataService } from '../ruleData/ruleData.service';
 import { RuleSchema, RuleField } from '../scenarioData/scenarioData.interface';
+import { extractExpressionVariables } from '../../utils/helpers';
 export class InvalidRuleContent extends Error {
   constructor(message: string) {
     super(message);
@@ -20,38 +21,82 @@ export class RuleMappingService {
     fieldKey: 'inputs' | 'outputs',
   ): Promise<{ [key: string]: any[] }> {
     const promises = nodes.map(async (node: any) => {
+      // Decision nodes
       if (node.type === 'decisionNode' && node.content?.key) {
         const generateNestedSchema = await this.ruleSchemaFile(ruleDir, node.content.key);
-        const { inputs, resultOutputs } = generateNestedSchema;
-        return fieldKey === 'inputs' ? inputs : resultOutputs;
+        return fieldKey === 'inputs' ? generateNestedSchema.inputs : generateNestedSchema.resultOutputs;
       }
+      // Expression nodes
       if (node.type === 'expressionNode' && node.content?.expressions) {
-        const simpleExpressionRegex = /^[a-zA-Z0-9]+$/;
-        return node.content.expressions.map((expr: { key: any; value: any }) => {
-          const isSimpleValue = simpleExpressionRegex.test(expr.value);
-          return {
-            key: isSimpleValue ? (fieldKey === 'inputs' ? expr.key : expr.value) : expr.key,
-            field: isSimpleValue ? (fieldKey === 'inputs' ? expr.value : expr.key) : expr.key,
-            exception: isSimpleValue ? null : expr.value,
-          };
-        });
-      } else {
-        return (node.content?.[fieldKey] || []).map((field: Field) => ({
-          id: field.id,
-          name: field.name,
-          type: field.type,
-          field: field.field,
-        }));
+        return this.processExpressions(node.content.expressions, fieldKey);
       }
+      // All other nodes
+      return (node.content?.[fieldKey] || []).map((field: Field) => ({
+        id: field.id,
+        name: field.name,
+        type: field.type,
+        field: field.field,
+      }));
     });
 
     const results = await Promise.all(promises);
     const fields = results.flat();
 
+    // Filter duplicates
     const uniqueFieldsMap = new Map(fields.map((field) => [field.field, field]));
-
     const uniqueFields = Array.from(uniqueFieldsMap.values());
+
     return { [fieldKey]: uniqueFields };
+  }
+
+  // Process expressions based on the fieldKey
+  private processExpressions(expressions: { key: any; value: any }[], fieldKey: 'inputs' | 'outputs'): any[] {
+    const simpleExpressionRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+    return expressions.flatMap((expr) => {
+      const isSimpleValue = simpleExpressionRegex.test(expr.value);
+
+      // input fields
+      if (fieldKey === 'inputs') {
+        if (isSimpleValue) {
+          return [
+            {
+              key: expr.key,
+              field: expr.value,
+              exception: null,
+            },
+          ];
+        }
+
+        // Complex expression - extract variables
+        const variables = extractExpressionVariables(expr.value);
+
+        if (variables.length === 0) {
+          return [
+            {
+              key: expr.key,
+              field: expr.key,
+              exception: expr.value,
+            },
+          ];
+        }
+
+        return variables.map((variable) => ({
+          key: expr.key,
+          field: variable,
+          exception: expr.value,
+        }));
+      }
+
+      // output fields
+      return [
+        {
+          key: isSimpleValue ? expr.value : expr.key,
+          field: isSimpleValue ? expr.key : expr.key,
+          exception: isSimpleValue ? null : expr.value,
+        },
+      ];
+    });
   }
 
   // Get the final outputs of a rule from mapping the target output nodes and the edges
