@@ -128,3 +128,223 @@ export const formatValue = (value: string): boolean | number | string | null => 
 export const deriveNameFromFilepath = (filepath: string): string => {
   return filepath.split('/').pop().replace('.json', '');
 };
+
+/**
+ * Extract variables from template literals like `this is a variable name: ${variableName}`
+ * @param expression Template string to extract variables from
+ * @returns Array of variable names found in template literals
+ */
+export const extractTemplateVariables = (expression: string): string[] => {
+  const templateVarRegex = /\${([a-zA-Z_][a-zA-Z0-9_]*)}/g;
+  const matches = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = templateVarRegex.exec(expression)) !== null) {
+    matches.push(match[1]);
+  }
+
+  return matches;
+};
+
+export const limitInputLength = (input: string, maxLength: number = 1000): string => {
+  if (!input) return '';
+  return input.length <= maxLength ? input : input.substring(0, maxLength);
+};
+
+/**
+ * Extract variables from expressions including ternary operators and other patterns
+ * @param expression code string to extract variables from
+ * @returns Array of variable names found in the expression
+ */
+export const extractExpressionVariables = (expression: string): string[] => {
+  if (!expression) return [];
+
+  // Limit the expression length to avoid performance issues with regex
+  const limitedExpression = limitInputLength(expression);
+
+  const variableRegex = /[a-zA-Z_][a-zA-Z0-9_]*/g;
+  const keywords = new Set([
+    'if',
+    'else',
+    'return',
+    'var',
+    'let',
+    'const',
+    'function',
+    'true',
+    'false',
+    'null',
+    'undefined',
+    'this',
+    'new',
+    'class',
+    'switch',
+    'case',
+    'default',
+    'break',
+    'continue',
+    'for',
+    'while',
+    'do',
+    'in',
+    'of',
+    'try',
+    'catch',
+    'finally',
+    'typeof',
+    'instanceof',
+    'void',
+    'delete',
+    'throw',
+    'with',
+    'root',
+    'and',
+    'or',
+    'not',
+    'is',
+    'in',
+    'keys',
+    'values',
+    'split',
+  ]);
+  const functionNames = new Set([
+    'none',
+    'map',
+    'flatMap',
+    'filter',
+    'some',
+    'all',
+    'one',
+    'count',
+    'contains',
+    'flatten',
+    'sum',
+    'avg',
+    'min',
+    'max',
+    'mean',
+    'mode',
+    'len',
+    'date',
+    'startOf',
+    'endOf',
+    'duration',
+    'time',
+    'year',
+    'month',
+    'monthOfYear',
+    'dayOfWeek',
+    'dayOfMonth',
+    'dayOfYear',
+    'weekOfMonth',
+    'weekOfYear',
+    'seasonOfYear',
+    'monthString',
+    'weekdayString',
+    'dateString',
+    'upper',
+    'lower',
+    'startsWith',
+    'endsWith',
+    'matches',
+    'extract',
+    'string',
+    'number',
+    'bool',
+    'array',
+    'object',
+    'abs',
+    'ceil',
+    'floor',
+    'round',
+    'rand',
+    'isNumeric',
+    'extract',
+    'type',
+    'trim',
+    'fuzzyMatch',
+  ]);
+  const templateVars = extractTemplateVariables(expression);
+
+  const extractSpecialPatternVariables = (expr: string): string[] => {
+    const specialVars: string[] = [];
+    const funcCallRegex = /([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*\()/g;
+    let match: RegExpExecArray | null;
+    while ((match = funcCallRegex.exec(expr)) !== null) {
+      const name = match[1];
+      if (!functionNames.has(name) && !keywords.has(name)) {
+        specialVars.push(name);
+      }
+    }
+    const propAccessRegex = /([a-zA-Z_][a-zA-Z0-9_]*)(?=\.[a-zA-Z_][a-zA-Z0-9_]*)/g;
+    while ((match = propAccessRegex.exec(expr)) !== null) {
+      if (match[1] !== '#' && !keywords.has(match[1])) {
+        specialVars.push(match[1]);
+      }
+    }
+    return specialVars;
+  };
+
+  // Find property names used in object literals
+  // example: { key: value }
+  const findPropertyAssignments = (expr: string): Set<string> => {
+    const properties = new Set<string>();
+    const objectRegex = /{([^{}]*)}/g;
+    let objMatch: RegExpExecArray | null;
+    while ((objMatch = objectRegex.exec(expr)) !== null) {
+      const inner = objMatch[1];
+      const propRegex = /([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*:)/g;
+      let propMatch: RegExpExecArray | null;
+      while ((propMatch = propRegex.exec(inner)) !== null) {
+        properties.add(propMatch[1]);
+      }
+    }
+    return properties;
+  };
+
+  const propertyAssignments = findPropertyAssignments(limitedExpression);
+
+  // Identify ranges for all string literals
+  // includes: (backticks, single and double quotes)
+  const stringRanges: [number, number][] = [];
+  let inString: boolean = false;
+  let stringStart = 0;
+  let currentQuote = '';
+  for (let i = 0; i < limitedExpression.length; i++) {
+    const char = limitedExpression[i];
+    const prevChar = i > 0 ? limitedExpression[i - 1] : '';
+    if (!inString && (char === '`' || char === "'" || char === '"')) {
+      inString = true;
+      currentQuote = char;
+      stringStart = i;
+    } else if (inString && char === currentQuote && prevChar !== '\\') {
+      stringRanges.push([stringStart, i]);
+      inString = false;
+      currentQuote = '';
+    }
+  }
+  if (inString) {
+    stringRanges.push([stringStart, expression.length - 1]);
+  }
+  const isInString = (pos: number): boolean => stringRanges.some(([start, end]) => pos > start && pos < end);
+
+  const matches: string[] = [];
+  let varMatch: RegExpExecArray | null;
+  while ((varMatch = variableRegex.exec(limitedExpression)) !== null) {
+    const name = varMatch[0];
+    const pos = varMatch.index;
+    const isHashProp = pos > 1 && expression[pos - 2] === '#' && expression[pos - 1] === '.';
+    if (
+      !keywords.has(name) &&
+      !functionNames.has(name) &&
+      !isInString(pos) &&
+      !isHashProp &&
+      !propertyAssignments.has(name)
+    ) {
+      matches.push(name);
+    }
+  }
+
+  // Combine and return unique variables
+  return Array.from(new Set([...matches, ...extractSpecialPatternVariables(limitedExpression), ...templateVars]));
+};
