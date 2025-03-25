@@ -105,7 +105,7 @@ describe('KlammService', () => {
 
     expect(service['_getLastSyncTimestamp']).toHaveBeenCalled();
     expect(service.axiosGithubInstance.get).toHaveBeenCalledWith(
-      `${GITHUB_RULES_REPO}/commits?since=${new Date(1234567890).toISOString().split('.')[0]}Z&sha=${process.env.GITHUB_RULES_BRANCH}`,
+      `${GITHUB_RULES_REPO}/commits?since=${new Date(1234567890).toISOString().split('.')[0]}Z&sha=dev`,
     );
     expect(result.updatedFilesSinceLastDeploy).toEqual(mockFiles);
   });

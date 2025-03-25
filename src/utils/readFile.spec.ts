@@ -4,7 +4,7 @@ import * as fs from 'fs';
 jest.mock('fs');
 const mockedFs = fs as jest.Mocked<typeof fs>;
 
-const RULES_DIRECTORY = '../../../brms-rules/rules';
+const RULES_DIRECTORY = '../../../rules-repo/rules';
 
 describe('File Utility Functions', () => {
   beforeEach(() => {

@@ -10,7 +10,7 @@ import { deriveNameFromFilepath } from '../../utils/helpers';
 import { RULE_VERSION } from './ruleVersion';
 import { CategoryObject, PaginationDto } from './dto/pagination.dto';
 
-const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO || 'https://api.github.com/repos/bcgov/brms-rules';
+const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO;
 
 @Injectable()
 export class RuleDataService {

@@ -13,7 +13,7 @@ jest.mock('../../utils/readFile', () => ({
 }));
 
 jest.mock('fs/promises');
-const RULES_DIRECTORY = '../../../brms-rules/rules';
+const RULES_DIRECTORY = '../../../rules-repo/rules';
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
