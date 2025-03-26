@@ -5,7 +5,7 @@
  * It is meant for running as part of the pipeline to ensure that the rules are working as expected.
  *
  * The script can be run in two modes:
- * 1. Run tests for all rules in a repoo: If no specific rule path is provided as a command line argument,
+ * 1. Run tests for all rules in a repo: If no specific rule path is provided as a command line argument,
  *    the script will find all CSV test files and run tests for all rules.
  * 2. Run tests for specified rules: If a comma-separated list of rule paths is provided as a
  *    command line argument, the script will run tests only for the specified rules.

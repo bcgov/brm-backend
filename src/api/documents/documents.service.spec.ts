@@ -13,7 +13,6 @@ jest.mock('../../utils/readFile', () => ({
 }));
 
 jest.mock('fs/promises');
-const RULES_DIRECTORY = '../../../rules-repo/rules';
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -24,7 +23,7 @@ describe('DocumentsService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue(RULES_DIRECTORY),
+            get: jest.fn().mockReturnValue('rules'),
           },
         },
         DocumentsService,
@@ -99,8 +98,8 @@ describe('DocumentsService', () => {
       expect(result).toEqual(['file1.json', 'subdir/file4.json', 'file3.JSON']);
 
       expect(fsPromises.readdir).toHaveBeenCalledTimes(2);
-      expect(fsPromises.readdir).toHaveBeenCalledWith(RULES_DIRECTORY, { withFileTypes: true });
-      expect(fsPromises.readdir).toHaveBeenCalledWith(path.join(RULES_DIRECTORY, 'subdir'), { withFileTypes: true });
+      expect(fsPromises.readdir).toHaveBeenCalledWith('rules', { withFileTypes: true });
+      expect(fsPromises.readdir).toHaveBeenCalledWith(path.join('rules', 'subdir'), { withFileTypes: true });
     });
 
     it('should throw HttpException when directory reading fails', async () => {
@@ -118,7 +117,7 @@ describe('DocumentsService', () => {
 
       expect(result).toEqual([]);
       expect(fsPromises.readdir).toHaveBeenCalledTimes(1);
-      expect(fsPromises.readdir).toHaveBeenCalledWith(RULES_DIRECTORY, { withFileTypes: true });
+      expect(fsPromises.readdir).toHaveBeenCalledWith('rules', { withFileTypes: true });
     });
 
     it('should ignore non-JSON files', async () => {
@@ -146,7 +145,7 @@ describe('DocumentsService', () => {
 
       expect(result).toEqual([]);
       expect(fsPromises.readdir).toHaveBeenCalledTimes(1);
-      expect(fsPromises.readdir).toHaveBeenCalledWith(RULES_DIRECTORY, { withFileTypes: true });
+      expect(fsPromises.readdir).toHaveBeenCalledWith('rules', { withFileTypes: true });
     });
   });
 
@@ -166,7 +165,7 @@ describe('DocumentsService', () => {
       const result = await service.getFileContent('path/to/existing/file');
 
       expect(result).toBe(mockContent);
-      expect(readFileSafely).toHaveBeenCalledWith(RULES_DIRECTORY, 'path/to/existing/file');
+      expect(readFileSafely).toHaveBeenCalledWith('rules', 'path/to/existing/file');
     });
 
     it('should throw a 500 error if reading the file fails', async () => {
