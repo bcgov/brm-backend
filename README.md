@@ -39,7 +39,7 @@ Before running your application locally, you'll need some environment variables.
 
 - MONGODB_URL: The URL for connecting to the MongoDB instance you created in the previous step. Should be mongodb://localhost:27017/brms-db.
 - FRONTEND_URI: The URI for the frontend application. Set it to http://localhost:8080.
-- GITHUB_RULES_REPO: Set to whatever the api address of your GitHub rules repo is, like https://api.github.com/repos/bcgov/brms-rules
+- GITHUB_RULES_REPO: Set to whatever your GitHub rules repo is, like `bcgov/brms-rules`
 - GITHUB_TOKEN: Optional github token to mitigate issues with rate limiting
 - GITHUB_APP_CLIENT_ID
 - GITHUB_APP_CLIENT_SECRET

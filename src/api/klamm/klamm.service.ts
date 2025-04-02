@@ -10,7 +10,7 @@ import { RuleData } from '../ruleData/ruleData.schema';
 import { DocumentsService } from '../documents/documents.service';
 import { KlammSyncMetadata, KlammSyncMetadataDocument } from './klammSyncMetadata.schema';
 
-export const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO;
+export const GITHUB_RULES_REPO_API = `https://api.github.com/repos/${process.env.GITHUB_RULES_REPO}`;
 
 export class InvalidFieldRequest extends Error {
   constructor(message: string) {
@@ -127,7 +127,7 @@ export class KlammService {
       // The dev branch is used because the rules should always be updated on the dev branch before production
       // so this is an appropriate reference to sync from
       const commitsResponse = await this.axiosGithubInstance.get(
-        `${GITHUB_RULES_REPO}/commits?since=${formattedDate}&sha=dev`,
+        `${GITHUB_RULES_REPO_API}/commits?since=${formattedDate}&sha=dev`,
       );
       const commits = commitsResponse.data.reverse();
       let lastCommitAsyncTimestamp;

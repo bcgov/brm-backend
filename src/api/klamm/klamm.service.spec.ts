@@ -1,6 +1,6 @@
 import { Model } from 'mongoose';
 import { Logger } from '@nestjs/common';
-import { KlammService, GITHUB_RULES_REPO } from './klamm.service';
+import { KlammService, GITHUB_RULES_REPO_API } from './klamm.service';
 import { RuleDataService } from '../ruleData/ruleData.service';
 import { RuleMappingService } from '../ruleMapping/ruleMapping.service';
 import { DocumentsService } from '../documents/documents.service';
@@ -105,7 +105,7 @@ describe('KlammService', () => {
 
     expect(service['_getLastSyncTimestamp']).toHaveBeenCalled();
     expect(service.axiosGithubInstance.get).toHaveBeenCalledWith(
-      `${GITHUB_RULES_REPO}/commits?since=${new Date(1234567890).toISOString().split('.')[0]}Z&sha=dev`,
+      `${GITHUB_RULES_REPO_API}/commits?since=${new Date(1234567890).toISOString().split('.')[0]}Z&sha=dev`,
     );
     expect(result.updatedFilesSinceLastDeploy).toEqual(mockFiles);
   });

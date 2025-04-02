@@ -10,7 +10,7 @@ import { deriveNameFromFilepath } from '../../utils/helpers';
 import { RULE_VERSION } from './ruleVersion';
 import { CategoryObject, PaginationDto } from './dto/pagination.dto';
 
-const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO;
+const GITHUB_RULES_REPO_API = `https://api.github.com/repos/${process.env.GITHUB_RULES_REPO}`;
 
 @Injectable()
 export class RuleDataService {
@@ -233,7 +233,7 @@ export class RuleDataService {
       if (process.env.GITHUB_TOKEN) {
         headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
       }
-      const branchesResponse = await axios.get(`${GITHUB_RULES_REPO}/branches`, { headers });
+      const branchesResponse = await axios.get(`${GITHUB_RULES_REPO_API}/branches`, { headers });
       const currentBranches = branchesResponse?.data.map(({ name }) => name);
       // Remove current reviewBranch if it no longer exists
       if (currentBranches) {
@@ -291,7 +291,7 @@ export class RuleDataService {
         headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
       }
       // Get the file from the review branch
-      const contentsUrl = `${GITHUB_RULES_REPO}/contents/rules/${encodeURIComponent(ruleFilepath)}`;
+      const contentsUrl = `${GITHUB_RULES_REPO_API}/contents/rules/${encodeURIComponent(ruleFilepath)}`;
       const getFileResponse = await axios.get(contentsUrl, {
         headers,
         params: { ref: reviewBranch }, // Ensure we're checking the correct branch
