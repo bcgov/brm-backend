@@ -14,17 +14,5 @@ RUN npm ci
 # Copy the application code
 COPY . ./
 
-# Clone the production rules repository into rules/prod
-RUN mkdir -p rules/prod && \
-    git clone -b main https://github.com/bcgov/brms-rules.git ./tmp-brm-rules && \
-    mv ./tmp-brm-rules/rules/* rules/prod && \
-    rm -rf ./tmp-brm-rules
-
-# Clone the dev rules repository into rules/dev
-RUN mkdir -p rules/dev && \
-    git clone -b dev https://github.com/bcgov/brms-rules.git ./tmp-brm-rules && \
-    mv ./tmp-brm-rules/rules/* rules/dev && \
-    rm -rf ./tmp-brm-rules
-
 # Start the application
 CMD ["npm", "start"]

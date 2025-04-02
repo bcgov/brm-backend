@@ -1,0 +1,51 @@
+name: Deploy to OpenShift
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch: # Allows us to trigger this workflow from elsewhere (like the rules repo)
+
+jobs:
+  deploy:
+    needs: build_image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin
+
+      - name: Authenticate and set context for OpenShift
+        uses: redhat-actions/oc-login@v1
+
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          namespace: ${{ github.ref == 'refs/heads/main' && secrets.OPENSHIFT_PROD_NAMESPACE  || secrets.OPENSHIFT_DEV_NAMESPACE  }}
+          openshift_token: ${{ github.ref == 'refs/heads/main' && secrets.OPENSHIFT_PROD_TOKEN  || secrets.OPENSHIFT_DEV_TOKEN  }}
+          insecure_skip_tls_verify: true
+
+      - name: Clone production rules repository
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p rules/prod
+          git clone -b main https://github.com/bcgov/brms-rules.git ./tmp-brm-rules
+          mv ./tmp-brm-rules/rules/* rules/prod
+          rm -rf ./tmp-brm-rules
+
+      - name: Clone dev rules repository
+        if: github.ref == 'refs/heads/dev'
+        run: |
+          mkdir -p rules/dev
+          git clone -b dev https://github.com/bcgov/brms-rules.git ./tmp-brm-rules
+          mv ./tmp-brm-rules/rules/* rules/dev
+          rm -rf ./tmp-brm-rules
+
+      - name: Run Helm
+        run: |
+          helm upgrade --install brm-backend ./helm --set image.tag=${{ needs.build_image.outputs.image_tag }}

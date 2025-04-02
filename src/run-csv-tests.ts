@@ -5,17 +5,14 @@
  * It is meant for running as part of the pipeline to ensure that the rules are working as expected.
  *
  * The script can be run in two modes:
- * 1. Run tests for all rules: If no specific rule path is provided as a command line argument,
+ * 1. Run tests for all rules in a repo: If no specific rule path is provided as a command line argument,
  *    the script will find all CSV test files and run tests for all rules.
  * 2. Run tests for specified rules: If a comma-separated list of rule paths is provided as a
  *    command line argument, the script will run tests only for the specified rules.
  *
- * Environment Variables:
- * - RULES_DIRECTORY: The directory where the rules are stored (default: 'brms-rules/rules').
- * - CSV_TESTS_DIRECTORY: The directory where the CSV test files are stored (default: 'brms-rules/tests').
- *
  * Command Line Arguments:
- * - rulePathsToTest: A comma-separated list of rule paths to test. If not provided, all rules will be tested.
+ * - argv[1]: The path to the rules repository.
+ * - argv[2]: The rule path to test. If not provided, all rules in the repo will be tested.
  */
 import fs from 'fs';
 import path from 'path';
@@ -34,14 +31,11 @@ interface CSVFilesForRule {
   testFiles: string[];
 }
 
-const RULES_DIRECTORY = process.env.RULES_DIRECTORY || 'brms-rules/rules';
-const CSV_TESTS_DIRECTORY = process.env.CSV_TESTS_DIRECTORY || 'brms-rules/tests';
-
 class CsvTestRunner {
   private ruleStats = { ruleCount: 0, testCount: 0, failedCount: 0 };
   private failedTests: string[] = [];
 
-  private configService = new ConfigService({ RULES_DIRECTORY });
+  private configService = new ConfigService({ RULES_DIRECTORY: '.' });
   private logger = new Logger();
   private documentsService = new DocumentsService(this.configService);
   private ruleDataService = new RuleDataService(null, null, this.documentsService, this.logger);
@@ -83,18 +77,17 @@ class CsvTestRunner {
 
   /**
    * Retrieves the test files at a specified path.
-   * @param filePath - The path to search for test files.
+   * @param testFilePath - The path to search for test files.
    * @returns An object containing the relative path and an array of file names.
    */
-  getTestFilesAtRulePath(filePath: string): CSVFilesForRule {
-    const testFilePath = path.relative(CSV_TESTS_DIRECTORY, filePath);
+  getTestFilesAtRulePath(testFilePath: string): CSVFilesForRule {
     try {
-      const testFiles = fs.readdirSync(filePath)?.filter((subfile) => {
-        return fs.statSync(path.join(filePath, subfile)).isFile() && subfile.endsWith('.csv');
+      const testFiles = fs.readdirSync(testFilePath)?.filter((subfile) => {
+        return fs.statSync(path.join(testFilePath, subfile)).isFile() && subfile.endsWith('.csv');
       });
       return { testFilePath, testFiles };
     } catch (error) {
-      console.warn(filePath, error.message);
+      console.warn(testFilePath, error.message);
       return { testFilePath, testFiles: [] };
     }
   }
@@ -134,17 +127,18 @@ class CsvTestRunner {
    */
   public async runScenariosForCSVTestfile(ruleDir: string, testFilePath: string, testFile: string) {
     this.ruleStats.testCount++;
-    const fullTestFilePath = `${CSV_TESTS_DIRECTORY}/${testFilePath}/${testFile}`;
+    const relativeFilePath = path.relative(`${ruleDir}/tests`, testFilePath);
+    const fullTestFilePath = `${testFilePath}/${testFile}`;
     const testCSVFileContent = await fs.promises.readFile(fullTestFilePath, 'utf8');
     const testFileCSV: string[][] = this.convertCsvToArray(testCSVFileContent.trim());
-    const csvScenarios = getScenariosFromParsedCSV(testFileCSV, testFilePath);
-    const rulePath = `${testFilePath}.json`;
+    const csvScenarios = getScenariosFromParsedCSV(testFileCSV, relativeFilePath);
+    const rulePath = `${relativeFilePath}.json`;
     const hasNoExpectedResults = csvScenarios.some((scenario) => scenario.expectedResults.length === 0);
     if (hasNoExpectedResults) {
       console.warn(`\tMissing expected results for file ${testFile}`);
     }
     const { allTestsPassed, csvContent } = await this.scenarioDataService.getCSVForRuleRun(
-      rulePath,
+      `${ruleDir}/rules/${rulePath}`,
       null,
       ruleDir,
       csvScenarios,
@@ -194,9 +188,10 @@ class CsvTestRunner {
 
   /**
    * Test a rule at a specified path with the CSV test files there
+   * @param ruleRepoDir - The path to the rules repository
    * @param rulePathToTest - The path of the rule.
    */
-  async runTestsForSpecifiedRulePath(ruleDir, rulePathToTest?: string) {
+  async runTestsForSpecifiedRulePath(ruleRepoDir: string, rulePathToTest?: string) {
     if (rulePathToTest) {
       if (rulePathToTest.startsWith('rules/')) {
         rulePathToTest = rulePathToTest.slice(6);
@@ -205,20 +200,20 @@ class CsvTestRunner {
         rulePathToTest = rulePathToTest.slice(0, -5);
       }
     }
-    const { testFilePath, testFiles } = this.getTestFilesAtRulePath(`${CSV_TESTS_DIRECTORY}/${rulePathToTest}`);
+    const { testFilePath, testFiles } = this.getTestFilesAtRulePath(`${ruleRepoDir}/tests/${rulePathToTest}`);
     if (!testFiles || testFiles.length === 0) {
       return;
     }
-    await this.runTestsForRule(ruleDir, testFilePath, testFiles);
+    await this.runTestsForRule(ruleRepoDir, testFilePath, testFiles);
   }
 
   /**
    * Test rules at specified paths
    * @param rulePathToTests - comma separated list of rule paths to test.
    */
-  async runTestsForSpecifiedRulePaths(rulePathsToTest?: string) {
+  async runTestsForSpecifiedRulePaths(ruleRepoDir: string, rulePathsToTest?: string) {
     for (const rulePathToTest of rulePathsToTest.split(',')) {
-      await this.runTestsForSpecifiedRulePath(rulePathToTest);
+      await this.runTestsForSpecifiedRulePath(ruleRepoDir, rulePathToTest);
     }
     this.showFinalTestResults();
     process.exit(0);
@@ -227,12 +222,12 @@ class CsvTestRunner {
   /**
    * Runs all rules by getting all paths that have CSV test files and running tests for each rule.
    */
-  async runAllRules(ruleDir: string) {
+  async runAllRules(ruleRepoDir: string) {
     // Gets all paths that have CSV test files in them
-    const csvTestPaths = this.getTestPathsAndFiles(CSV_TESTS_DIRECTORY);
+    const csvTestPaths = this.getTestPathsAndFiles(`${ruleRepoDir}/tests`);
     // Run tests for each rule
     for (const { testFilePath, testFiles } of csvTestPaths) {
-      await this.runTestsForRule(ruleDir, testFilePath, testFiles);
+      await this.runTestsForRule(ruleRepoDir, testFilePath, testFiles);
     }
     this.showFinalTestResults();
     process.exit(0);
@@ -243,14 +238,21 @@ class CsvTestRunner {
    * @param argv - The command line arguments.
    */
   async main(argv: string[]) {
-    const rulePathsToTest = argv[2];
-
-    // Run tests for the specified rule path if it exists, otherwise run all rules
-    if (rulePathsToTest) {
-      await this.runTestsForSpecifiedRulePaths(rulePathsToTest);
-    } else {
-      await this.runAllRules('');
+    // Get the rules repository path and the rule paths to test from the command line arguments
+    const rulesRepoDirs = argv[2] || process.env.RULES_REPOSITORIES;
+    const rulePathsToTest = argv[3];
+    if (!rulesRepoDirs) {
+      throw new Error('Rules repository path is required');
     }
+    // For each rules repository path, run tests for the specified rule paths or all rules
+    rulesRepoDirs.split(',').forEach(async (ruleRepoDir) => {
+      // Run tests for the specified rule path if it exists, otherwise run all rules
+      if (rulePathsToTest) {
+        await this.runTestsForSpecifiedRulePaths(ruleRepoDir, rulePathsToTest);
+      } else {
+        await this.runAllRules(ruleRepoDir);
+      }
+    });
   }
 }
 

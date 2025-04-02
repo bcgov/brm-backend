@@ -1,6 +1,6 @@
 # BRM (Business Rules Management) Backend
 
-This project is the Backend for the SDPR Business Rules Engine (BRE) and [BRM App](https://github.com/bcgov/brm-app).
+This project is the Backend for the [BRM App](https://github.com/bcgov/brm-app), supporting business rule authoring and execution. It was made for SDPR's Business Rules Engine (BRE).
 
 ## Local Development Setup
 
@@ -21,7 +21,9 @@ To set up MongoDB and populate it with initial data, follow these steps:
 
 ### Including Rules from the Rules Repository
 
-To get access to rules locally on your machine simply clone the repo at https://github.com/bcgov/brms-rules and ensure the rules are placed at the brm-backend/rules/prod location (for main branch/production rules) or brm-backend/rules/dev location (for dev branch/dev rules).
+To get access to rules locally on your machine simply clone your repo into the project and ensure the rules are placed at the brm-backend/rules/prod location (for main branch/production rules) or brm-backend/rules/dev location (for dev branch/dev rules).
+
+For example:
 
 ```bash
 git clone https://github.com/bcgov/brms-rules.git
@@ -37,7 +39,7 @@ Before running your application locally, you'll need some environment variables.
 
 - MONGODB_URL: The URL for connecting to the MongoDB instance you created in the previous step. Should be mongodb://localhost:27017/brms-db.
 - FRONTEND_URI: The URI for the frontend application. Set it to http://localhost:8080.
-- GITHUB_RULES_BRANCH: Specifies which branch Klamm is syncing with
+- GITHUB_RULES_REPO: Set to whatever the api address of your GitHub rules repo is, like https://api.github.com/repos/bcgov/brms-rules
 - GITHUB_TOKEN: Optional github token to mitigate issues with rate limiting
 - GITHUB_APP_CLIENT_ID
 - GITHUB_APP_CLIENT_SECRET
@@ -59,6 +61,14 @@ npm run dev
 ```
 
 The API will now be available at [http://localhost:3000](http://localhost:3000).
+
+## Running the CSV Tests
+
+TODO: Add information here
+
+## The Deployment Pipeline
+
+TODO: Add information here
 
 ## How to Contribute
 

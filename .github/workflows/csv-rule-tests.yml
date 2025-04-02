@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - dev
-      - feature/pipeline-rule-tests
+      - feature/multitenant-improvements #TODO: Remove before merge
   pull_request:
     branches:
       - main
@@ -21,8 +21,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Clone additional repository
-        run: git clone -b dev https://github.com/bcgov/brms-rules.git brms-rules
-
-      - name: Run CSV tests
-        run: npm run test:rules
+      # Checks for names of rule repositories in RULES_REPOSITORIES environment variable
+      # Clones the repositories into their own folders and runs the tests for them
+      - name: Clone additional repositories and run tests
+        run: |
+          IFS=',' read -r -a repos <<< "${{ vars.RULES_REPOSITORIES }}"
+          for repo in "${repos[@]}"; do
+            git clone -b dev "https://github.com/$repo.git" "$repo"
+            npm run test:rules $repo
+          done

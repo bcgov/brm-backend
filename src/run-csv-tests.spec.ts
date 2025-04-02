@@ -47,18 +47,24 @@ describe('CsvTestRunner', () => {
     process.argv = originalArgv;
   });
 
-  it('should run all rules when process.argv[2] is blank', async () => {
-    process.argv[2] = '';
-    runner.runAllRules = jest.fn();
-    await runner.main(process.argv);
-    expect(runner.runAllRules).toHaveBeenCalled();
+  it('should fail when no rule repo is provided', async () => {
+    await expect(runner.main(process.argv)).rejects.toThrow('Rules repository path is required');
   });
 
-  it('should run tests for specified rule paths when process.argv[2] has file names', async () => {
-    process.argv[2] = 'rules/rule1,rules/rule2';
+  it('should run all rules when process.argv[3] is blank', async () => {
+    process.argv[2] = 'rules-repo';
+    process.argv[3] = '';
+    runner.runAllRules = jest.fn();
+    await runner.main(process.argv);
+    expect(runner.runAllRules).toHaveBeenCalledWith('rules-repo');
+  });
+
+  it('should run tests for specified rule paths when process.argv[3] has file names', async () => {
+    process.argv[2] = 'rules-repo';
+    process.argv[3] = 'rules/rule1,rules/rule2';
     runner.runTestsForSpecifiedRulePaths = jest.fn();
     await runner.main(process.argv);
-    expect(runner.runTestsForSpecifiedRulePaths).toHaveBeenCalledWith('rules/rule1,rules/rule2');
+    expect(runner.runTestsForSpecifiedRulePaths).toHaveBeenCalledWith('rules-repo', 'rules/rule1,rules/rule2');
   });
 
   it('should convert CSV to array', () => {
@@ -82,7 +88,7 @@ describe('CsvTestRunner', () => {
     (fs.statSync as jest.Mock).mockReturnValue({ isFile: () => true });
     const result = runner.getTestFilesAtRulePath(filePath);
     expect(result).toEqual({
-      testFilePath: path.relative('brms-rules/tests', filePath),
+      testFilePath: filePath,
       testFiles: ['file1.csv', 'file2.csv'],
     });
   });
@@ -94,9 +100,7 @@ describe('CsvTestRunner', () => {
     (fs.readdirSync as jest.Mock).mockReturnValueOnce(['file1.json']);
     (fs.readdirSync as jest.Mock).mockReturnValueOnce(['file1.csv', 'file2.csv']);
     const result = runner.getTestPathsAndFiles(dir);
-    expect(result).toEqual([
-      { testFilePath: '../../some/dir/subdir/file1.json', testFiles: ['file1.csv', 'file2.csv'] },
-    ]);
+    expect(result).toEqual([{ testFilePath: 'some/dir/subdir/file1.json', testFiles: ['file1.csv', 'file2.csv'] }]);
   });
 
   it('should run scenarios for CSV test file', async () => {
@@ -134,7 +138,7 @@ describe('CsvTestRunner', () => {
     runner.runTestsForRule = jest.fn();
     runner.getTestFilesAtRulePath = jest.fn();
     (runner.getTestFilesAtRulePath as jest.Mock).mockReturnValue({
-      testFilePath: path.relative('brms-rules/tests', rulePathToTest),
+      testFilePath: path.relative('rules-repo/tests', rulePathToTest),
       testFiles: ['file.csv'],
     });
     await runner.runTestsForSpecifiedRulePath(rulePathToTest);
@@ -144,7 +148,7 @@ describe('CsvTestRunner', () => {
   it('should run tests for specified rule paths', async () => {
     const rulePathsToTest = 'rules/rule1,rules/rule2';
     runner.runTestsForSpecifiedRulePath = jest.fn();
-    await runner.runTestsForSpecifiedRulePaths(rulePathsToTest);
+    await runner.runTestsForSpecifiedRulePaths('rules-repo', rulePathsToTest);
     expect(runner.runTestsForSpecifiedRulePath).toHaveBeenCalledTimes(2);
   });
 
