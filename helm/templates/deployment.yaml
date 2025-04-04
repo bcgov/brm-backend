@@ -22,17 +22,15 @@ spec:
         # It moves the rules to the correct location to be used by the app
         - name: clone-rules
           image: alpine/git:latest
-          env:
-            - name: GITHUB_RULES_REPO
-              value: "{{ .Values.githubRulesRepo }}"          command:
+          command:
             - sh
             - -c
             - |
               mkdir -p /rules/prod /rules/dev /rules/temp/prod /rules/temp/dev
-              git clone -b main https://github.com/${GITHUB_RULES_REPO}.git /rules/temp/prod
+              git clone -b main https://github.com/{{ .Values.githubRulesRepo }}.git /rules/temp/prod
               mv /rules/temp/prod/rules/* /rules/prod/
               rm -rf /rules/temp/prod
-              git clone -b dev https://github.com/${GITHUB_RULES_REPO}.git /rules/temp/dev
+              git clone -b dev https://github.com/{{ .Values.githubRulesRepo }}.git /rules/temp/dev
               mv /rules/temp/dev/rules/* /rules/dev/
               rm -rf /rules/temp/dev
           volumeMounts:
