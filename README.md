@@ -62,13 +62,56 @@ npm run dev
 
 The API will now be available at [http://localhost:3000](http://localhost:3000).
 
-## Running the CSV Tests
+## Code Formatting
 
-TODO: Add information here
+We use [Prettier](https://prettier.io/) to automatically format code in this project. The configuration can be found in the `.prettierrc` file.
 
-## The Deployment Pipeline
+For the best experience, we recommend installing the following editor plugins:
 
-TODO: Add information here
+- **Prettier – Code formatter**
+- **Formatting Toggle** (to easily enable/disable formatting when needed)
+
+## CI/CD Pipeline
+
+This project uses **GitHub Actions** for CI/CD workflows, which are defined in the `.github/workflows` folder. The following processes are currently in place:
+
+- **Automated testing**: On every pull request and on merges to the `dev` or `main` branches, Jest unit tests and ESLint checks are automatically run.
+- **Docker image build**: When changes are merged into `dev` or `main`, a Docker image is built and pushed to the GitHub Container Registry at `ghcr.io/bcgov/brm-backend`.
+- **Deployment**: After the image is built, it is deployed to the appropriate OpenShift environments. These environments are linked via project secrets configured in the repository.
+
+More information about the deployment pipeline is available [here](https://knowledge.social.gov.bc.ca/successor/bre/devops-pipeline).
+
+## Technical Overview
+
+### Stack
+- **Language:** TypeScript
+- **Framework:** [Nest.js](https://nestjs.com/)
+- **Unit Testing:** Jest. Tests are stored next to files they are testing (with a `.spec.ts` suffix).
+- **Linting/Formatting:** ESLint, Prettier
+- **Database:** MongoDB with Mongoose for ODM
+- **Logging:** Winston
+- **Documentaiton:** Swagger
+
+### Project Structure
+| Directory         | Details           |
+| ----------------- | ----------------- |
+| src/api           | Each subdirectory here provides a different API base endpoint. Every endpoint subdirectory should have a [controller](https://docs.nestjs.com/controllers) and a [service](https://docs.nestjs.com/providers#services). It will also have any other supporting utils/tests relevant to that endpoint. | 
+| src/auth          | Where the auth lives. Has the same controller/service structure mentioned above. Currently provides support for Github OAuth.              |
+| src/utils         | Any functions reused throughout the project |
+| .github/workflows | CI/CD Pipeline Github Actions |
+| helm              | Charts for deploying to OpenShift |
+
+
+## CSV Rule Testing
+
+The BRM system uses a rules engine where business rules are defined in JSON files and stored in a separate repository. CSV files contain test scenarios for these rules. When rule changes are pushed or when backend app changes are made, these tests verify the rules work as expected. A specialized workflow is implemented to validate these rules:
+
+- Tests are run for rules via the `run-csv-test.ts` file in this repo.
+- These tests are run automaticall via a GitHub Actions workflow file in `.github/workflows/csv-rule-tests.yml`
+- This can either run specified tests only or all tests within the rules repositories in the `RULES_REPOSITORIES` project variable.
+- These tests are stored in the related rules repository in the `/tests` directory. The tests are stored at the same path of the rule they relate to (so tests for `general-supplements/coop-share-purchase.json` should be stored at `tests/general-supplements/coop-share-purchase`).
+- Each test contains inputs and expected outputs for business rules.
+- The app has functionality for adding these tests to the repository in the relevant place.
 
 ## How to Contribute
 
