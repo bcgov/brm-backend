@@ -15,6 +15,9 @@ jobs:
   build_image:
     runs-on: ubuntu-latest
 
+    outputs:
+      branch: ${{ github.ref_name }}
+
     steps:
       - uses: actions/checkout@v4
 
