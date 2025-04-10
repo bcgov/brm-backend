@@ -10,7 +10,7 @@ import { RuleData } from '../ruleData/ruleData.schema';
 import { DocumentsService } from '../documents/documents.service';
 import { KlammSyncMetadata, KlammSyncMetadataDocument } from './klammSyncMetadata.schema';
 
-export const GITHUB_RULES_REPO = process.env.GITHUB_RULES_REPO || 'https://api.github.com/repos/bcgov/brms-rules';
+export const GITHUB_RULES_REPO_API = `https://api.github.com/repos/${process.env.GITHUB_RULES_REPO}`;
 
 export class InvalidFieldRequest extends Error {
   constructor(message: string) {
@@ -124,8 +124,10 @@ export class KlammService {
       const formattedDate = date.toISOString().split('.')[0] + 'Z'; // Format required for github api
       this.logger.log(`Getting files from Github from ${formattedDate} onwards...`);
       // Fetch commits since the specified timestamp
+      // The dev branch is used because the rules should always be updated on the dev branch before production
+      // so this is an appropriate reference to sync from
       const commitsResponse = await this.axiosGithubInstance.get(
-        `${GITHUB_RULES_REPO}/commits?since=${formattedDate}&sha=${process.env.GITHUB_RULES_BRANCH}`,
+        `${GITHUB_RULES_REPO_API}/commits?since=${formattedDate}&sha=dev`,
       );
       const commits = commitsResponse.data.reverse();
       let lastCommitAsyncTimestamp;

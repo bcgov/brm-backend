@@ -17,9 +17,28 @@ spec:
         helm.sh/release: "{{ .Release.Name }}"
         helm.sh/revision: "{{ .Release.Revision }}"
     spec:
+      initContainers:
+        # This init container clones the rules repository for both prod and dev rules
+        # It moves the rules to the correct location to be used by the app
+        - name: clone-rules
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /rules/prod /rules/dev /rules/temp/prod /rules/temp/dev
+              git clone -b main https://github.com/{{ .Values.githubRulesRepo }}.git /rules/temp/prod
+              mv /rules/temp/prod/rules/* /rules/prod/
+              rm -rf /rules/temp/prod
+              git clone -b dev https://github.com/{{ .Values.githubRulesRepo }}.git /rules/temp/dev
+              mv /rules/temp/dev/rules/* /rules/dev/
+              rm -rf /rules/temp/dev
+          volumeMounts:
+            - name: rules-volume
+              mountPath: /rules
       containers:
         - name: brm-backend
-          image: '{{ .Values.image.tag }}'
+          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
           ports:
             - containerPort: 8080
           resources:
@@ -42,11 +61,17 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: Always
+          volumeMounts:
+            - name: rules-volume
+              mountPath: /opt/app-root/src/rules
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
       securityContext: {}
       schedulerName: default-scheduler
+      volumes:
+        - name: rules-volume
+          emptyDir: {}
   strategy:
     type: RollingUpdate
     rollingUpdate:
