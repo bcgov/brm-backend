@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      branch: ${{ github.ref_name }}
+      branch: ${{ steps.extract_branch.outputs.BRANCH_NAME }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +39,7 @@ jobs:
         run: |
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v5
