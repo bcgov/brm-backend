@@ -25,6 +25,16 @@ jobs:
         id: set_params
         run: |
           BRANCH=${{ github.event.workflow_run.outputs.branch || github.ref_name }}
+      - name: Debug Branch Output
+        run: |
+          echo "github.event.workflow_run.head_branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+
+      - name: Set OpenShift parameters
+        id: set_params
+        run: |
+          BRANCH=${{ github.event.workflow_run.head_branch || github.ref_name }}
+          echo "DEBUG: Branch is $BRANCH"
           if [ "$BRANCH" == "main" ]; then
             echo "NAMESPACE=${{ secrets.OPENSHIFT_PROD_NAMESPACE }}" >> $GITHUB_ENV
             echo "TOKEN=${{ secrets.OPENSHIFT_PROD_TOKEN }}" >> $GITHUB_ENV
@@ -44,7 +54,7 @@ jobs:
       - name: Determine image tag
         id: determine_tag
         run: |
-          BRANCH=${{ github.event.workflow_run.outputs.branch || github.ref_name }}
+          BRANCH=${{ github.event.workflow_run.head_branch || github.ref_name }}
           if [ "$BRANCH" == "main" ]; then
             echo "IMAGE_TAG=main" >> $GITHUB_ENV
           else
