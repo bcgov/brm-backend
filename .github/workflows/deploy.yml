@@ -24,15 +24,6 @@ jobs:
       - name: Set OpenShift parameters
         id: set_params
         run: |
-          BRANCH=${{ github.event.workflow_run.outputs.branch || github.ref_name }}
-      - name: Debug Branch Output
-        run: |
-          echo "github.event.workflow_run.head_branch: ${{ github.event.workflow_run.head_branch }}"
-          echo "github.ref_name: ${{ github.ref_name }}"
-
-      - name: Set OpenShift parameters
-        id: set_params
-        run: |
           BRANCH=${{ github.event.workflow_run.head_branch || github.ref_name }}
           echo "DEBUG: Branch is $BRANCH"
           if [ "$BRANCH" == "main" ]; then
