@@ -63,8 +63,14 @@ describe('GithubAuthController', () => {
 
       expect(service.getAccessToken).toHaveBeenCalledWith(code);
       expect(service.getGithubUser).toHaveBeenCalledWith(accessToken);
-      expect(res.cookie).toHaveBeenCalledWith('github-authentication-token', accessToken, { httpOnly: true });
-      expect(res.cookie).toHaveBeenCalledWith('github-authentication-username', githubUser.login, { httpOnly: true });
+      expect(res.cookie).toHaveBeenCalledWith('github-authentication-token', accessToken, {
+        httpOnly: true,
+        secure: false,
+      });
+      expect(res.cookie).toHaveBeenCalledWith('github-authentication-username', githubUser.login, {
+        httpOnly: true,
+        secure: false,
+      });
       expect(res.redirect).toHaveBeenCalledWith(decodeURIComponent(state) || '/');
     });
   });
