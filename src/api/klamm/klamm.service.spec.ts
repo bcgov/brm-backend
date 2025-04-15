@@ -1,9 +1,8 @@
 import { Model } from 'mongoose';
 import { Logger } from '@nestjs/common';
-import { KlammService, GITHUB_RULES_REPO_API } from './klamm.service';
+import { KlammService } from './klamm.service';
 import { RuleDataService } from '../ruleData/ruleData.service';
 import { RuleMappingService } from '../ruleMapping/ruleMapping.service';
-import { DocumentsService } from '../documents/documents.service';
 import { KlammSyncMetadataDocument } from './klammSyncMetadata.schema';
 import { RuleData } from '../ruleData/ruleData.schema';
 import { KlammRulePayload } from './klamm';
@@ -12,25 +11,22 @@ describe('KlammService', () => {
   let service: KlammService;
   let ruleDataService: RuleDataService;
   let ruleMappingService: RuleMappingService;
-  let documentsService: DocumentsService;
   let klammSyncMetadata: Model<KlammSyncMetadataDocument>;
 
   beforeEach(async () => {
     ruleDataService = {
       getRuleDataByFilepath: jest.fn(),
+      getContentForRuleFromFilepath: jest.fn(),
     } as unknown as RuleDataService;
     ruleMappingService = {
       inputOutputSchemaFile: jest.fn(),
     } as unknown as RuleMappingService;
-    documentsService = {
-      getFileContent: jest.fn(),
-    } as unknown as DocumentsService;
     klammSyncMetadata = {
       findOneAndUpdate: jest.fn(),
       findOne: jest.fn(),
     } as unknown as Model<KlammSyncMetadataDocument>;
 
-    service = new KlammService(ruleDataService, ruleMappingService, documentsService, klammSyncMetadata, new Logger());
+    service = new KlammService(ruleDataService, ruleMappingService, klammSyncMetadata, new Logger());
   });
 
   afterEach(() => {
@@ -105,7 +101,7 @@ describe('KlammService', () => {
 
     expect(service['_getLastSyncTimestamp']).toHaveBeenCalled();
     expect(service.axiosGithubInstance.get).toHaveBeenCalledWith(
-      `${GITHUB_RULES_REPO_API}/commits?since=${new Date(1234567890).toISOString().split('.')[0]}Z&sha=dev`,
+      `https://api.github.com/repos/${process.env.GITHUB_RULES_REPO}/commits?since=${new Date(1234567890).toISOString().split('.')[0]}Z&sha=dev`,
     );
     expect(result.updatedFilesSinceLastDeploy).toEqual(mockFiles);
   });
@@ -187,21 +183,21 @@ describe('KlammService', () => {
     const mockFileContent = Buffer.from(
       JSON.stringify({ nodes: [{ type: 'decisionNode', content: { key: 'key1' } }] }),
     );
-    jest.spyOn(documentsService, 'getFileContent').mockResolvedValue(mockFileContent);
+    jest.spyOn(ruleDataService, 'getContentForRuleFromFilepath').mockResolvedValue(mockFileContent);
     jest.spyOn(service as any, '_getKlammRuleFromName').mockResolvedValue({});
 
     const result = await service['_getChildRules'](mockRule);
 
-    expect(documentsService.getFileContent).toHaveBeenCalledWith(mockRule.filepath);
+    expect(ruleDataService.getContentForRuleFromFilepath).toHaveBeenCalledWith(mockRule.filepath, 'dev');
     expect(service['_getKlammRuleFromName']).toHaveBeenCalledWith('key1');
     expect(result).toEqual([{}]);
   });
 
   it('should handle error in _getChildRules', async () => {
     const mockRule = { name: 'rule1', filepath: 'file1.js' } as RuleData;
-    jest.spyOn(documentsService, 'getFileContent').mockRejectedValue(new Error('Error'));
+    jest.spyOn(ruleDataService, 'getContentForRuleFromFilepath').mockRejectedValue(new Error('Error'));
 
-    await expect(service['_getChildRules'](mockRule)).rejects.toThrow('Error gettting child rules for rule1');
+    await expect(service['_getChildRules'](mockRule)).rejects.toThrow('Error getting child rules for rule1');
   });
 
   it('should add or update rule in Klamm correctly', async () => {
@@ -357,13 +353,7 @@ describe('KlammService', () => {
   });
   it('should initialize axiosGithubInstance with auth header when GITHUB_TOKEN is set', () => {
     process.env.GITHUB_TOKEN = 'test-token';
-    const newService = new KlammService(
-      ruleDataService,
-      ruleMappingService,
-      documentsService,
-      klammSyncMetadata,
-      new Logger(),
-    );
+    const newService = new KlammService(ruleDataService, ruleMappingService, klammSyncMetadata, new Logger());
     expect(newService.axiosGithubInstance.defaults.headers).toHaveProperty('Authorization', 'Bearer test-token');
     delete process.env.GITHUB_TOKEN;
   });

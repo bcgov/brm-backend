@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { RuleDataModule } from '../ruleData/ruleData.module';
 import { RuleMappingModule } from '../ruleMapping/ruleMapping.module';
 import { KlammSyncMetadata, KlammSyncMetadataSchema } from './klammSyncMetadata.schema';
-import { DocumentsService } from '../documents/documents.service';
 import { KlammController } from './klamm.controller';
 import { KlammService } from './klamm.service';
 
@@ -14,6 +13,6 @@ import { KlammService } from './klamm.service';
     MongooseModule.forFeature([{ name: KlammSyncMetadata.name, schema: KlammSyncMetadataSchema }]),
   ],
   controllers: [KlammController],
-  providers: [KlammService, DocumentsService, Logger],
+  providers: [KlammService, Logger],
 })
 export class KlammModule {}
