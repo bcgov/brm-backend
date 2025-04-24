@@ -2,6 +2,8 @@ import { Controller, Get, Query, Redirect, Res, Post, Logger } from '@nestjs/com
 import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { GithubAuthService } from './github-auth.service';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 @Controller('auth/github')
 export class GithubAuthController {
   constructor(
@@ -58,11 +60,17 @@ export class GithubAuthController {
     const accessToken = await this.authService.getAccessToken(code);
     const githubUser = await this.authService.getGithubUser(accessToken);
     // Set the server-side cookies
-    res.cookie('github-authentication-token', accessToken, { httpOnly: true });
-    res.cookie('github-authentication-username', githubUser.login, { httpOnly: true });
+    res.cookie('github-authentication-token', accessToken, { httpOnly: true, secure: isProduction });
+    res.cookie('github-authentication-username', githubUser.login, { httpOnly: true, secure: isProduction });
     // Decode to get the redirect url and redirect there
     const returnUrl = decodeURIComponent(state);
-    res.redirect(returnUrl || '/');
+    const allowedDomains = [process.env.FRONTEND_URI || 'http://localhost:3000'];
+    const isValidUrl = allowedDomains.some((domain) => returnUrl?.startsWith(domain));
+    if (!isValidUrl) {
+      this.logger.warn(`Invalid returnUrl: ${returnUrl}`);
+      return res.redirect('/');
+    }
+    res.redirect(returnUrl);
   }
 
   /**
@@ -80,8 +88,8 @@ export class GithubAuthController {
   })
   async logoutOfGithubApp(@Res() res) {
     // Set the server-side cookies to empty in order to 'logout' the user from their github oauth
-    res.cookie('github-authentication-token', '', { httpOnly: true });
-    res.cookie('github-authentication-username', '', { httpOnly: true });
+    res.cookie('github-authentication-token', '', { httpOnly: true, secure: isProduction });
+    res.cookie('github-authentication-username', '', { httpOnly: true, secure: isProduction });
     res.status(200).send({ message: 'Logged out successfully' });
   }
 }

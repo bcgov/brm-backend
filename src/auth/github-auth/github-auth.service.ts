@@ -61,7 +61,7 @@ export class GithubAuthService {
       });
       return response.data;
     } catch (error) {
-      this.logger.error('Error fetching GitHub user:', error);
+      this.logger.error(`Error fetching GitHub user: ${error.message}`);
       throw new Error('Failed to fetch GitHub user information');
     }
   }

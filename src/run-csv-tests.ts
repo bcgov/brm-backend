@@ -55,10 +55,52 @@ class CsvTestRunner {
    * @returns A 2D array representing the CSV content.
    */
   convertCsvToArray(csv: string): string[][] {
-    return csv.split('\n').map((row) => {
-      const regex = /(".*?"|[^",]+|(?<=,)(?=,))/g;
-      return row.match(regex);
-    });
+    const rows = csv.split('\n');
+    const result: string[][] = [];
+
+    for (const row of rows) {
+      if (!row.trim()) continue;
+
+      const fields: string[] = [];
+      let inQuotes = false;
+      let currentField = '';
+
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+
+        if (char === '"') {
+          if (inQuotes && row[i + 1] === '"') {
+            currentField += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          fields.push(this.cleanQuotes(currentField));
+          currentField = '';
+        } else {
+          currentField += char;
+        }
+      }
+      fields.push(this.cleanQuotes(currentField));
+      result.push(fields);
+    }
+
+    return result;
+  }
+
+  /**
+   * Cleans quotes from a CSV field value
+   * @param field - The CSV field value to clean
+   * @returns The cleaned field value
+   */
+  cleanQuotes(field: string): string {
+    field = field.trim();
+    // Remove surrounding quotes
+    if (field.startsWith('"') && field.endsWith('"')) {
+      field = field.substring(1, field.length - 1);
+    }
+    return field;
   }
 
   /**
